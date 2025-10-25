@@ -7,10 +7,10 @@ import {
   TaskCard
 } from "./task-card";
 import { cva } from "class-variance-authority";
-import { Card, CardContent, CardHeader } from "./ui/card";
-import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader } from "../ui/card";
+import { Button } from "../ui/button";
 import { GripVertical } from "lucide-react";
-import { ScrollArea, ScrollBar } from "./ui/scroll-area";
+import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 
 export interface Column {
   id: UniqueIdentifier;
