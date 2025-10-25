@@ -1,9 +1,11 @@
-import { Github } from "lucide-react";
 import "./App.css";
+import manadoLightLogo from './assets/manado-light.png'
+import manadoDarkLogo from './assets/manado-dark.png'
 import { KanbanBoard } from "./components/kanban-board";
 import { ThemeToggle } from "./components/theme-toggle";
 import { ThemeProvider } from "./components/theme-provider";
 import { Button } from "./components/ui/button";
+import { CircleUserRound } from "lucide-react";
 
 const FooterLink = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -22,52 +24,41 @@ function App() {
     <>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <div className="min-h-screen flex flex-col">
-          <header className="flex justify-between w-full flex-row p-4">
-            <Button variant="link" asChild className="text-primary h-8 w-8 p-0">
-              <a href="https://github.com/Georgegriff/react-dnd-kit-tailwind-shadcn-ui">
-                <Github className="fill-current h-full w-full" />
-              </a>
-            </Button>
-            <Button variant="link" asChild className="text-primary h-16 w-16">
-              <a href="https://griffa.dev">@griffadev</a>
-            </Button>
-            <ThemeToggle />
+          <header className="flex items-center justify-between w-full flex-row p-4">
+            <div className="flex items-center justify-center relative">
+              <img src={manadoLightLogo} className="h-[3rem] scale-100 transition-all dark:scale-0" alt="Manado Logo" />
+              <img src={manadoDarkLogo} className="absolute h-[3rem] scale-0 transition-all  dark:scale-100" alt="Manado Logo" />
+            </div>
+            <div className="flex items-center justify-center relative gap-2">
+              <ThemeToggle />
+              <Button variant="outline" className="relative">
+                <CircleUserRound className="mr-2" /> @username
+              </Button>
+            </div>
           </header>
-          <main className="mx-4 flex flex-col gap-6">
+          <main className="mt-6 mx-4 flex flex-col gap-6">
             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
               Drag and Drop Kanban Board
             </h1>
             <KanbanBoard />
-            <p className="leading-7 [&:not(:first-child)]:mt-6">
-              With Keyboard Controls and Screen Reader interactions.
-            </p>
+            <div className="leading-7 [&:not(:first-child)]:mt-6">
+              <p className="font-bold ">
+                Manado: Task Management and To-Do List Application
+              </p>
+              <p>💻 with ❤️ by Roshani Ayu Pranasti © 2025</p>
+            </div>
           </main>
           <footer className="mt-6">
             <ul className="flex items-center justify-center">
               <li>
                 <FooterLink>
-                  <a href="https://react.dev/">React</a>
-                </FooterLink>
-              </li>
-              <li>
-                <FooterLink>
-                  <a href="https://dndkit.com">dndkit</a>
-                </FooterLink>
-              </li>
-              <li>
-                <FooterLink>
-                  <a href="https://tailwindcss.com/">tailwind</a>
-                </FooterLink>
-              </li>
-              <li>
-                <FooterLink>
-                  <a href="https://ui.shadcn.com/">shadcn/ui</a>
+                  <a href="https://github.com/roshaniayu/task-management-application/tree/main" target="_blank">GitHub Source Code</a>
                 </FooterLink>
               </li>
             </ul>
           </footer>
-        </div>
-      </ThemeProvider>
+        </div >
+      </ThemeProvider >
     </>
   );
 }
