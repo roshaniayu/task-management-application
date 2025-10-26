@@ -2,21 +2,40 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
+import { signInUser } from "../../lib/api";
+import { saveAuth } from "../../lib/auth";
 
 type LoginFormProps = {
   onSwitch?: () => void;
+  onAuthSuccess: (token: string, username: string) => void;
 };
 
-export function LoginForm({ onSwitch }: LoginFormProps) {
+export function LoginForm({ onSwitch, onAuthSuccess }: LoginFormProps) {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
+  const [error, setError] = useState<string>();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Add login logic here
-    console.log("Sign In submitted:", formData);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // disable default form submission
+
+    setError(undefined);
+    setIsLoading(true);
+
+    try {
+      const response = await signInUser({
+        username: formData.username,
+        password: formData.password,
+      });
+
+      onAuthSuccess(response.token, response.username);
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,8 +82,11 @@ export function LoginForm({ onSwitch }: LoginFormProps) {
           />
         </div>
 
-        <Button type="submit" className="w-full">
-          Sign In
+        {error && (
+          <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+        )}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Signing in..." : "Sign In"}
         </Button>
 
         <p className="text-sm text-center text-gray-500 dark:text-gray-400">

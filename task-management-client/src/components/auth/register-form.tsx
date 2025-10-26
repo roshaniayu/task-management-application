@@ -2,23 +2,48 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
+import { registerUser } from "../../lib/api";
+import { saveAuth } from "../../lib/auth";
 
 type RegisterFormProps = {
   onSwitch?: () => void;
+  onAuthSuccess: (token: string, username: string) => void;
 };
 
-export function RegisterForm({ onSwitch }: RegisterFormProps) {
+export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+  const [error, setError] = useState<string>();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Add registration logic here
-    console.log("Form submitted:", formData);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // disable default form submissions
+
+    setError(undefined);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await registerUser({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      onAuthSuccess(response.token, response.username);
+    } catch (err: any) {
+      setError(err.message || "Failed to register");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,8 +117,11 @@ export function RegisterForm({ onSwitch }: RegisterFormProps) {
             onChange={handleChange}
           />
         </div>
-        <Button type="submit" className="w-full">
-          Register
+        {error && (
+          <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+        )}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Creating account..." : "Register"}
         </Button>
         <p className="text-sm text-center text-gray-500 dark:text-gray-400">
           Already have an account?{" "}

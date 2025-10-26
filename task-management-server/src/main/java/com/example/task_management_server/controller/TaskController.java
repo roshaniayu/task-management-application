@@ -1,8 +1,11 @@
 package com.example.task_management_server.controller;
 
+import com.example.task_management_server.exception.ForbiddenException;
+import com.example.task_management_server.exception.ResourceNotFoundException;
 import com.example.task_management_server.model.Account;
 import com.example.task_management_server.model.Task;
 import com.example.task_management_server.service.TaskService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,19 +33,17 @@ public class TaskController {
     @Transactional
     public ResponseEntity<?> createTask(
             @RequestAttribute("username") String username,
-            @RequestBody CreateTaskRequest req) {
+            @Valid @RequestBody CreateTaskRequest req) {
 
         Task saved;
         try {
             saved = taskService.createTask(username, req.title(), req.description(), req.deadline(), req.status());
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "unknown error"));
+            throw new ResourceNotFoundException(e.getMessage());
         }
 
         Optional<String> description = Optional.ofNullable(saved.getDescription());
-        Optional<String> deadline = Optional.ofNullable(saved.getDeadline()).map(d -> d.toString());
+        Optional<String> deadline = Optional.ofNullable(saved.getDeadline()).map(Instant::toString);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "id", saved.getId(),
                 "title", saved.getTitle(),
@@ -56,18 +58,16 @@ public class TaskController {
         try {
             tasks = taskService.listTasksForUser(username);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "unknown error"));
+            throw new ResourceNotFoundException(e.getMessage());
         }
 
         return ResponseEntity.ok(
                 tasks.stream()
                         .map(task -> {
                             Optional<String> description = Optional.ofNullable(task.getDescription());
-                            Optional<String> deadline = Optional.ofNullable(task.getDeadline()).map(d -> d.toString());
+                            Optional<String> deadline = Optional.ofNullable(task.getDeadline()).map(Instant::toString);
                             List<String> assignees = Optional.ofNullable(task.getAssignees())
-                                    .map(t -> t.stream().map(u -> u.getUsername()).toList())
+                                    .map(t -> t.stream().map(Account::getUsername).toList())
                                     .orElse(List.of());
 
                             return Map.of(
@@ -97,7 +97,7 @@ public class TaskController {
                 req.status());
 
         if (savedOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "not allowed to update this task"));
+            throw new ForbiddenException("not allowed to update this task");
         }
         Task saved = savedOpt.get();
 
@@ -118,7 +118,7 @@ public class TaskController {
             @PathVariable("id") Long id) {
         boolean ok = taskService.deleteIfOwner(username, id);
         if (!ok) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "not allowed to delete this task"));
+            throw new ForbiddenException("not allowed to delete this task");
         }
         return ResponseEntity.noContent().build();
     }
@@ -132,7 +132,7 @@ public class TaskController {
 
         Optional<Task> savedOpt = taskService.assignTask(username, id, req.username());
         if (savedOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "not allowed to assign this task"));
+            throw new ForbiddenException("not allowed to assign this task");
         }
         Task saved = savedOpt.get();
 
@@ -153,8 +153,7 @@ public class TaskController {
 
         Optional<Task> savedOpt = taskService.unassignTask(username, id, req.username());
         if (savedOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "not allowed to unassign this task"));
+            throw new ForbiddenException("not allowed to unassign this task");
         }
         Task saved = savedOpt.get();
 
@@ -167,7 +166,7 @@ public class TaskController {
     }
 
     public static record CreateTaskRequest(
-            @NotEmpty String title,
+            @NotEmpty(message = "title cannot be empty") String title,
             String description,
             String deadline,
             String status) {

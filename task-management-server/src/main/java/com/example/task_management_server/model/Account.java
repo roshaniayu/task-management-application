@@ -1,18 +1,9 @@
 package com.example.task_management_server.model;
 
-import java.util.Set;
+import jakarta.persistence.*;
+import lombok.*;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import java.util.Set;
 
 @Entity
 @Table(name = "account", schema = "public")
@@ -26,6 +17,9 @@ public class Account {
     @Id
     @Column(nullable = false, length = 64)
     private String username;
+
+    @Column(nullable = false, columnDefinition = "text")
+    private String email;
 
     @Column(nullable = false, length = 128)
     private String password;

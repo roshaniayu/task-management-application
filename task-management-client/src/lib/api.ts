@@ -48,14 +48,14 @@ async function request<T>(path: string, options: RequestInit = {}, base = DEFAUL
 }
 
 export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
-  return request<AuthResponse>("/api/register", {
+  return request<AuthResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export async function signInUser(payload: SignInPayload): Promise<AuthResponse> {
-  return request<AuthResponse>("/api/login", {
+  return request<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload),
   });

@@ -1,11 +1,10 @@
 package com.example.task_management_server.service;
 
 import com.example.task_management_server.model.Account;
+import com.example.task_management_server.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import com.example.task_management_server.repository.AccountRepository;
 
 import java.util.List;
 
@@ -26,13 +25,17 @@ public class AccountService {
      *
      * @throws IllegalArgumentException if user already exists or input invalid
      */
-    public Account register(String username, String rawPassword) {
+    public Account register(String username, String email, String rawPassword) {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("username is required");
+        }
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("email is required");
         }
         if (rawPassword == null || rawPassword.isBlank()) {
             throw new IllegalArgumentException("password is required");
         }
+
         if (accountRepository.existsById(username)) {
             throw new IllegalArgumentException("user already exists");
         }
@@ -40,6 +43,7 @@ public class AccountService {
         String hashed = passwordHasher.encode(rawPassword);
         Account account = Account.builder()
                 .username(username)
+                .email(email)
                 .password(hashed)
                 .build();
         account = accountRepository.save(account);
