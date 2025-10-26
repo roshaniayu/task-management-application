@@ -3,11 +3,11 @@ import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
 
-type SignInFormProps = {
+type LoginFormProps = {
   onSwitch?: () => void;
 };
 
-export function SignInForm({ onSwitch }: SignInFormProps) {
+export function LoginForm({ onSwitch }: LoginFormProps) {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -15,8 +15,8 @@ export function SignInForm({ onSwitch }: SignInFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Add sign-in logic here
-    console.log("Sign In submitted:", formData);
+    // TODO: Add login logic here
+    console.log("Log In submitted:", formData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +27,7 @@ export function SignInForm({ onSwitch }: SignInFormProps) {
   return (
     <Card className="w-full max-w-md p-6 space-y-4">
       <div className="space-y-2 text-center">
-        <h2 className="text-3xl font-bold">Sign In</h2>
+        <h2 className="text-3xl font-bold">Log In</h2>
         <p className="text-gray-500 dark:text-gray-400">
           Let's get your tasks done!
         </p>
@@ -64,7 +64,7 @@ export function SignInForm({ onSwitch }: SignInFormProps) {
         </div>
 
         <Button type="submit" className="w-full">
-          Sign In
+          Log In
         </Button>
 
         <p className="text-sm text-center text-gray-500 dark:text-gray-400">

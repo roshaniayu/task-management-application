@@ -3,7 +3,7 @@ import { useState } from "react";
 import manadoLightLogo from './assets/manado-light.png'
 import manadoDarkLogo from './assets/manado-dark.png'
 import { RegisterForm } from "./components/auth/register-form";
-import { SignInForm } from "./components/auth/sign-in-form";
+import { LoginForm } from "./components/auth/login-form";
 import { KanbanBoard } from "./components/board/kanban-board";
 import { Button } from "./components/ui/button";
 import { ThemeToggle } from "./components/theme-toggle";
@@ -12,7 +12,7 @@ import { CircleUserRound } from "lucide-react";
 
 function App() {
   const login = true; // todo: placeholder for login state
-  const [authVariant, setAuthVariant] = useState<'register' | 'signin'>('register');
+  const [authVariant, setAuthVariant] = useState<'register' | 'login'>('register');
 
   return (
     <>
@@ -54,9 +54,9 @@ function App() {
                     </p>
                   </div>
                   {authVariant === 'register' ? (
-                    <RegisterForm onSwitch={() => setAuthVariant('signin')} />
+                    <RegisterForm onSwitch={() => setAuthVariant('login')} />
                   ) : (
-                    <SignInForm onSwitch={() => setAuthVariant('register')} />
+                    <LoginForm onSwitch={() => setAuthVariant('register')} />
                   )}
                 </div>
               )
