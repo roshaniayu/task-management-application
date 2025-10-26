@@ -15,13 +15,13 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
-@Table(name = "user", schema = "public")
+@Table(name = "account", schema = "public")
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class User {
+public class Account {
 
     @Id
     @Column(nullable = false, length = 64)

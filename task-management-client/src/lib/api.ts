@@ -1,0 +1,67 @@
+export type RegisterPayload = {
+  username: string;
+  email: string;
+  password: string;
+};
+
+export type SignInPayload = {
+  username: string;
+  password: string;
+};
+
+export type AuthResponse = {
+  token: string;
+  username: string;
+};
+
+const DEFAULT_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+
+async function request<T>(path: string, options: RequestInit = {}, base = DEFAULT_BASE): Promise<T> {
+  const url = `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    let err: any = new Error(res.statusText || "Request failed");
+    try {
+      err = new Error(JSON.parse(text)?.message || text || res.statusText);
+    } catch {
+      err = new Error(text || res.statusText);
+    }
+    (err as any).status = res.status;
+    throw err;
+  }
+
+  // try to parse json, but return text if empty
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return (await res.json()) as T;
+  }
+  return (await res.text()) as unknown as T;
+}
+
+export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
+  return request<AuthResponse>("/api/register", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function signInUser(payload: SignInPayload): Promise<AuthResponse> {
+  return request<AuthResponse>("/api/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export default {
+  registerUser,
+  signInUser,
+};

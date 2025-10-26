@@ -49,11 +49,11 @@ public class Task {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
+    private Account owner;
 
     @ManyToMany
-    @JoinTable(name = "user_tasks", joinColumns = @JoinColumn(name = "task_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-    private Set<User> assignees;
+    @JoinTable(name = "account_task", joinColumns = @JoinColumn(name = "task_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<Account> assignees;
 
     public enum TaskStatus {
         TODO, IN_PROGRESS, DONE;

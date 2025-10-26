@@ -1,28 +1,19 @@
 package com.example.task_management_server.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
+import com.example.task_management_server.model.Account;
+import com.example.task_management_server.model.Task;
+import com.example.task_management_server.service.TaskService;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestAttribute;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.example.task_management_server.model.Task;
-import com.example.task_management_server.service.TaskService;
-
-import jakarta.validation.constraints.NotEmpty;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/tasks")
@@ -146,7 +137,7 @@ public class TaskController {
         Task saved = savedOpt.get();
 
         List<String> assignees = Optional.ofNullable(saved.getAssignees())
-                .map(t -> t.stream().map(u -> u.getUsername()).toList())
+                .map(t -> t.stream().map(Account::getUsername).toList())
                 .orElse(List.of());
         return ResponseEntity.ok(Map.of(
                 "id", saved.getId(),
@@ -168,7 +159,7 @@ public class TaskController {
         Task saved = savedOpt.get();
 
         List<String> assignees = Optional.ofNullable(saved.getAssignees())
-                .map(t -> t.stream().map(u -> u.getUsername()).toList())
+                .map(t -> t.stream().map(Account::getUsername).toList())
                 .orElse(List.of());
         return ResponseEntity.ok(Map.of(
                 "id", saved.getId(),
@@ -189,7 +180,7 @@ public class TaskController {
             String status) {
     }
 
-    public static record AssignUnassignTaskRequest(String username) {
+    public static record AssignUnassignTaskRequest(List<String> username) {
     }
 
 }

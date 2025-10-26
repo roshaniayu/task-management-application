@@ -1,25 +1,25 @@
 package com.example.task_management_server.service;
 
+import com.example.task_management_server.model.Account;
+import com.example.task_management_server.model.Task;
+import com.example.task_management_server.repository.AccountRepository;
+import com.example.task_management_server.repository.TaskRepository;
+import org.springframework.stereotype.Service;
+
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
-import org.springframework.stereotype.Service;
-
-import com.example.task_management_server.model.Task;
-import com.example.task_management_server.model.User;
-import com.example.task_management_server.repository.TaskRepository;
-import com.example.task_management_server.repository.UserRepository;
 
 @Service
 public class TaskService {
 
     private final TaskRepository taskRepo;
-    private final UserRepository userRepo;
+    private final AccountRepository userRepo;
 
-    public TaskService(TaskRepository taskRepo, UserRepository userRepo) {
+    public TaskService(TaskRepository taskRepo, AccountRepository userRepo) {
         this.taskRepo = taskRepo;
         this.userRepo = userRepo;
     }
@@ -31,7 +31,7 @@ public class TaskService {
             String deadlineStr,
             String statusStr) {
 
-        User owner = userRepo.findById(username).orElseThrow(() -> new IllegalArgumentException("user not found"));
+        Account owner = userRepo.findById(username).orElseThrow(() -> new IllegalArgumentException("user not found"));
 
         Task.TaskStatus status = Optional
                 .ofNullable(statusStr)
@@ -55,13 +55,13 @@ public class TaskService {
     }
 
     public Set<Task> listTasksForUser(String username) {
-        User user = userRepo
+        Account account = userRepo
                 .findById(username)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
 
         Set<Task> tasks = new HashSet<>();
-        tasks.addAll(taskRepo.findByOwner(user));
-        tasks.addAll(taskRepo.findByAssignees(user));
+        tasks.addAll(taskRepo.findByOwner(account));
+        tasks.addAll(taskRepo.findByAssignees(account));
         return tasks;
     }
 
@@ -120,7 +120,7 @@ public class TaskService {
         return true;
     }
 
-    public Optional<Task> assignTask(String username, Long id, String targetUsername) {
+    public Optional<Task> assignTask(String username, Long id, List<String> targetUsernames) {
         Optional<Task> taskOpt = taskRepo.findById(id);
         if (taskOpt.isEmpty())
             return Optional.empty();
@@ -129,15 +129,15 @@ public class TaskService {
         if (!task.getOwner().getUsername().equals(username))
             return Optional.empty();
 
-        Optional<User> target = userRepo.findById(targetUsername);
-        if (target.isEmpty())
+        List<Account> targets = userRepo.findAllById(targetUsernames);
+        if (targets.isEmpty())
             return Optional.empty();
 
-        task.getAssignees().add(target.get());
+        task.getAssignees().addAll(targets);
         return Optional.of(taskRepo.save(task));
     }
 
-    public Optional<Task> unassignTask(String username, Long id, String targetUsername) {
+    public Optional<Task> unassignTask(String username, Long id, List<String> targetUsernames) {
         Optional<Task> taskOpt = taskRepo.findById(id);
         if (taskOpt.isEmpty())
             return Optional.empty();
@@ -146,11 +146,11 @@ public class TaskService {
         if (!task.getOwner().getUsername().equals(username))
             return Optional.empty();
 
-        Optional<User> target = userRepo.findById(targetUsername);
-        if (target.isEmpty())
+        List<Account> targets = userRepo.findAllById(targetUsernames);
+        if (targets.isEmpty())
             return Optional.empty();
 
-        task.getAssignees().remove(target.get());
+        task.getAssignees().removeAll(targets);
         return Optional.of(taskRepo.save(task));
     }
 
