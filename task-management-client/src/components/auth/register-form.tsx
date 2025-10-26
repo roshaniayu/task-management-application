@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
 import { registerUser } from "../../lib/api";
-import { saveAuth } from "../../lib/auth";
+import { Eye, EyeOff } from "lucide-react";
 
 type RegisterFormProps = {
   onSwitch?: () => void;
@@ -19,6 +19,8 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
   });
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // disable default form submissions
@@ -95,27 +97,63 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
           <label htmlFor="password" className="text-sm font-medium text-left block">
             Password
           </label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            required
-            value={formData.password}
-            onChange={handleChange}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              value={formData.password}
+              onChange={handleChange}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4 text-gray-500" />
+              ) : (
+                <Eye className="h-4 w-4 text-gray-500" />
+              )}
+              <span className="sr-only">
+                {showPassword ? "Hide password" : "Show password"}
+              </span>
+            </Button>
+          </div>
         </div>
         <div className="space-y-2">
           <label htmlFor="confirmPassword" className="text-sm font-medium text-left block">
             Confirm Password
           </label>
-          <Input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            required
-            value={formData.confirmPassword}
-            onChange={handleChange}
-          />
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4 text-gray-500" />
+              ) : (
+                <Eye className="h-4 w-4 text-gray-500" />
+              )}
+              <span className="sr-only">
+                {showConfirmPassword ? "Hide password" : "Show password"}
+              </span>
+            </Button>
+          </div>
         </div>
         {error && (
           <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
