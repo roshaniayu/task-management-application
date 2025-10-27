@@ -125,6 +125,19 @@ export async function updateTask(taskId: string, status: string): Promise<void> 
   });
 }
 
+export async function deleteTask(taskId: string): Promise<void> {
+  const auth = getAuth();
+  const headers: Record<string, string> = {};
+  if (auth?.token) {
+    headers["Authorization"] = `Bearer ${auth.token}`;
+  }
+
+  await request<void>(`/tasks/${taskId}`, {
+    method: "DELETE",
+    headers,
+  });
+}
+
 export default {
   registerUser,
   signInUser,

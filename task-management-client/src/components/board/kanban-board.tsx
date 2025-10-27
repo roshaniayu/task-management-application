@@ -21,7 +21,7 @@ import { type Task, TaskCard } from "./task-card";
 import type { Column } from "./board-column";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
-import { fetchTasks, createTask, updateTask } from "@/lib/api";
+import { fetchTasks, createTask, updateTask, deleteTask } from "@/lib/api";
 import type { ServerTask } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import Input from "@/components/ui/input";
@@ -64,6 +64,16 @@ export function KanbanBoard() {
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
 
   const [tasks, setTasks] = useState<Task[]>([]);
+
+  const handleDeleteTask = async (taskId: UniqueIdentifier) => {
+    try {
+      await deleteTask(String(taskId));
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      setLoadError('Failed to delete task. Please try again.');
+    }
+  };
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -290,6 +300,7 @@ export function KanbanBoard() {
                   key={col.id}
                   column={col}
                   tasks={tasks.filter((task) => task.columnId === col.id)}
+                  onDelete={handleDeleteTask}
                 />
               </div>
             ) : (
@@ -297,6 +308,7 @@ export function KanbanBoard() {
                 key={col.id}
                 column={col}
                 tasks={tasks.filter((task) => task.columnId === col.id)}
+                onDelete={handleDeleteTask}
               />
             )
           ))}

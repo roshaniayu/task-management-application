@@ -4,9 +4,21 @@ import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cva } from "class-variance-authority";
-import { GripVertical, Calendar } from "lucide-react";
+import { GripVertical, Calendar, Trash2 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { type ColumnId } from "./kanban-board";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 export interface Task {
   id: UniqueIdentifier;
@@ -17,9 +29,10 @@ export interface Task {
   createdAt: string;
 }
 
-interface TaskCardProps {
+export interface TaskCardProps {
   task: Task;
   isOverlay?: boolean;
+  onDelete?: (taskId: UniqueIdentifier) => void;
 }
 
 export type TaskType = "Task";
@@ -29,7 +42,15 @@ export interface TaskDragData {
   task: Task;
 }
 
-export function TaskCard({ task, isOverlay }: TaskCardProps) {
+export interface TaskCardProps {
+  task: Task;
+  isOverlay?: boolean;
+  onDelete?: (taskId: UniqueIdentifier) => void;
+}
+
+export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     setNodeRef,
     attributes,
@@ -128,8 +149,48 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="px-3 py-2">
+      <CardFooter className="px-3 py-2 flex justify-between items-center">
         <div className="text-xs text-muted-foreground">Created on: {formatDate(new Date(task.createdAt))}</div>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete task</span>
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Task</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this task? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeleting}
+                onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                    await onDelete?.(task.id);
+                  } finally {
+                    setIsDeleting(false);
+                    setIsDeleteDialogOpen(false);
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardFooter>
     </Card>
   );
