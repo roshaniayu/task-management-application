@@ -108,9 +108,11 @@ public class TaskController {
         Task saved = savedOpt.get();
 
         Optional<String> description = Optional.ofNullable(saved.getDescription());
-        Optional<String> endDate = Optional.ofNullable(saved.getEndDate()).map(d -> d.toString());
+        Optional<String> createdAt = Optional.ofNullable(saved.getCreatedAt()).map(Instant::toString);
+        Optional<String> endDate = Optional.ofNullable(saved.getEndDate()).map(Instant::toString);
         return ResponseEntity.ok(Map.of(
                 "id", saved.getId(),
+                "createdAt", createdAt,
                 "title", saved.getTitle(),
                 "description", description,
                 "endDate", endDate,

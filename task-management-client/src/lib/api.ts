@@ -73,12 +73,15 @@ export type ServerTask = {
   assignees: string[];
 };
 
-export type CreateTaskPayload = {
+export type TaskPayload = {
   title: string;
   description?: string | null;
   endDate?: string | null;
   status?: "TODO" | "IN_PROGRESS" | "DONE";
 };
+
+export type CreateTaskPayload = TaskPayload;
+export type UpdateTaskPayload = TaskPayload;
 
 /**
  * Fetch tasks for the authenticated user. Automatically adds Authorization header
@@ -111,17 +114,17 @@ export async function createTask(payload: CreateTaskPayload): Promise<ServerTask
   });
 }
 
-export async function updateTask(taskId: string, status: string): Promise<void> {
+export async function updateTask(taskId: string, payload: UpdateTaskPayload): Promise<ServerTask> {
   const auth = getAuth();
   const headers: Record<string, string> = {};
   if (auth?.token) {
     headers["Authorization"] = `Bearer ${auth.token}`;
   }
 
-  await request<void>(`/tasks/${taskId}`, {
+  return request<ServerTask>(`/tasks/${taskId}`, {
     method: "PUT",
     headers,
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(payload),
   });
 }
 

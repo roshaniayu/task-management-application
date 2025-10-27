@@ -4,10 +4,18 @@ import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cva } from "class-variance-authority";
-import { GripVertical, Calendar, Trash2 } from "lucide-react";
+import { GripVertical, Calendar, Trash2, Pencil } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { type ColumnId } from "./kanban-board";
+import { type ColumnId, columnToStatus, statusToColumn } from "./kanban-board";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -19,6 +27,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "../ui/alert-dialog";
+import type { UpdateTaskPayload } from "@/lib/api";
 
 export interface Task {
   id: UniqueIdentifier;
@@ -33,6 +42,7 @@ export interface TaskCardProps {
   task: Task;
   isOverlay?: boolean;
   onDelete?: (taskId: UniqueIdentifier) => void;
+  onEdit?: (taskId: UniqueIdentifier, updates: UpdateTaskPayload) => Promise<void>;
 }
 
 export type TaskType = "Task";
@@ -48,9 +58,15 @@ export interface TaskCardProps {
   onDelete?: (taskId: UniqueIdentifier) => void;
 }
 
-export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
+export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [editDescription, setEditDescription] = useState(task.description || "");
+  const [editEndDate, setEditEndDate] = useState(task.endDate?.split('T')[0] || "");
+  const [editStatus, setEditStatus] = useState<"TODO" | "IN_PROGRESS" | "DONE">(columnToStatus[task.columnId]);
   const {
     setNodeRef,
     attributes,
@@ -98,7 +114,7 @@ export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
     const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
     if (diffMs < 0) {
       // past -> red
-      endBadgeClass = "bg-red-600 text-white border-transparent dark:bg-red-500";
+      endBadgeClass = "bg-red-600 text-white border-transparent dark:bg-red-600";
       endBadgeLabel = formatDate(endDateObj);
     } else if (diffMs <= threeDaysMs) {
       // within 3 days -> yellow
@@ -106,7 +122,7 @@ export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
       endBadgeLabel = formatDate(endDateObj);
     } else {
       // future (more than 3 days) -> green
-      endBadgeClass = "bg-green-600 text-white border-transparent dark:bg-green-500";
+      endBadgeClass = "bg-green-600 text-white border-transparent dark:bg-green-600";
       endBadgeLabel = formatDate(endDateObj);
     }
   }
@@ -133,7 +149,7 @@ export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
           TSK-{task.id}
         </Badge>
       </CardHeader>
-      <CardContent className="px-3 pt-3 pb-6 text-left flex flex-col gap-2">
+      <CardContent className="px-3 pt-3 pb-4 text-left flex flex-col gap-2">
         <div className="font-medium whitespace-pre-wrap">{task.title}</div>
         {task.description && (
           <div className="text-sm text-muted-foreground whitespace-pre-wrap">
@@ -151,46 +167,139 @@ export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
       </CardContent>
       <CardFooter className="px-3 py-2 flex justify-between items-center">
         <div className="text-xs text-muted-foreground">Created on: {formatDate(new Date(task.createdAt))}</div>
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-destructive"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              disabled={isDeleting}
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Delete task</span>
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Task</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this task? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
+        <div className="flex gap-1">
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                onClick={() => setIsDeleteDialogOpen(true)}
                 disabled={isDeleting}
-                onClick={async () => {
-                  setIsDeleting(true);
-                  try {
-                    await onDelete?.(task.id);
-                  } finally {
-                    setIsDeleting(false);
-                    setIsDeleteDialogOpen(false);
-                  }
-                }}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Delete task</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this task? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogAction
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    try {
+                      await onDelete?.(task.id);
+                    } finally {
+                      setIsDeleting(false);
+                      setIsDeleteDialogOpen(false);
+                    }
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-primary"
+                onClick={() => setIsEditDialogOpen(true)}
+                disabled={isEditing}
+              >
+                <Pencil className="h-4 w-4" />
+                <span className="sr-only">Edit task</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Edit Task</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Update the task details below.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="py-4 flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="title" className="text-sm font-medium">Title</label>
+                  <Input
+                    id="title"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Task title"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="description" className="text-sm font-medium">Description</label>
+                  <Input
+                    id="description"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Task description"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="endDate" className="text-sm font-medium">End Date</label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="status" className="text-sm font-medium">Status</label>
+                  <Select
+                    value={editStatus}
+                    onValueChange={(value: "TODO" | "IN_PROGRESS" | "DONE") => setEditStatus(value)}
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TODO">Todo</SelectItem>
+                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                      <SelectItem value="DONE">Done</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogAction
+                  disabled={isEditing}
+                  onClick={async () => {
+                    if (!onEdit) return;
+                    setIsEditing(true);
+                    try {
+                      await onEdit(task.id, {
+                        title: editTitle,
+                        description: editDescription || null,
+                        endDate: editEndDate || null,
+                        status: editStatus
+                      });
+                      setIsEditDialogOpen(false);
+                    } finally {
+                      setIsEditing(false);
+                    }
+                  }}
+                >
+                  {isEditing ? "Saving..." : "Save changes"}
+                </AlertDialogAction>
+                <AlertDialogCancel disabled={isEditing}>Cancel</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardFooter>
     </Card>
   );

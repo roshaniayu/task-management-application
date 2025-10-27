@@ -22,24 +22,32 @@ import type { Column } from "./board-column";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
 import { fetchTasks, createTask, updateTask, deleteTask } from "@/lib/api";
-import type { ServerTask } from "@/lib/api";
+import type { ServerTask, TaskPayload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import Input from "@/components/ui/input";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Plus } from "lucide-react";
 
-const columnToStatus: Record<ColumnId, string> = {
+export const columnToStatus: Record<ColumnId, "TODO" | "IN_PROGRESS" | "DONE"> = {
   "todo": "TODO",
   "in-progress": "IN_PROGRESS",
   "done": "DONE",
 };
 
-const statusToColumn: Record<string, ColumnId> = {
+export const statusToColumn: Record<"TODO" | "IN_PROGRESS" | "DONE", ColumnId> = {
   TODO: "todo",
   IN_PROGRESS: "in-progress",
   DONE: "done",
 };
-
 
 const defaultCols = [
   {
@@ -48,7 +56,7 @@ const defaultCols = [
   },
   {
     id: "in-progress" as const,
-    title: "In progress",
+    title: "In Progress",
   },
   {
     id: "done" as const,
@@ -62,8 +70,53 @@ export function KanbanBoard() {
   const [columns, setColumns] = useState<Column[]>(defaultCols);
   const pickedUpTaskColumn = useRef<ColumnId | null>(null);
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
-
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeColumn, setActiveColumn] = useState<Column | null>(null);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  // Add Task modal state
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newEndDate, setNewEndDate] = useState<string | undefined>(undefined);
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleCreateTask() {
+    if (!newTitle.trim()) return;
+    setIsSaving(true);
+    try {
+      const payload = {
+        title: newTitle.trim(),
+        description: newDescription ? newDescription.trim() : null,
+        endDate: newEndDate ? new Date(newEndDate).toISOString() : null,
+        status: "TODO"
+      } as const;
+
+      const created = await createTask(payload as any);
+
+      const mapped: Task = {
+        id: String(created.id),
+        columnId: statusToColumn[created.status] ?? "todo",
+        createdAt: created.createdAt,
+        title: created.title,
+        description: created.description ?? undefined,
+        endDate: created.endDate ?? null
+      } as Task;
+
+      setTasks((t) => [mapped, ...t]);
+      setIsCreateOpen(false);
+      setNewTitle("");
+      setNewDescription("");
+      setNewEndDate(undefined);
+    } catch (err) {
+      console.error("Failed to create task:", err);
+      // Could show an error toast here
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   const handleDeleteTask = async (taskId: UniqueIdentifier) => {
     try {
@@ -75,15 +128,25 @@ export function KanbanBoard() {
     }
   };
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const handleEditTask = async (taskId: UniqueIdentifier, updates: TaskPayload) => {
+    try {
+      updates.endDate = updates.endDate ? new Date(updates.endDate).toISOString() : null;
 
-  // Add Task modal state
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newEndDate, setNewEndDate] = useState<string | undefined>(undefined);
-  const [isSaving, setIsSaving] = useState(false);
+      const updated = await updateTask(String(taskId), updates);
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId
+            ? { ...updated, columnId: statusToColumn[updated.status] } as Task
+            : task
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      setLoadError('Failed to update task. Please try again.');
+      throw error;
+    }
+  };
 
   useEffect(() => {
     async function loadTasks() {
@@ -122,46 +185,6 @@ export function KanbanBoard() {
 
     loadTasks();
   }, []);
-
-  const [activeColumn, setActiveColumn] = useState<Column | null>(null);
-
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
-
-  // create task handler
-  async function handleCreateTask() {
-    if (!newTitle.trim()) return;
-    setIsSaving(true);
-    try {
-      const payload = {
-        title: newTitle.trim(),
-        description: newDescription ? newDescription.trim() : null,
-        endDate: newEndDate ? new Date(newEndDate).toISOString() : null,
-        status: "TODO"
-      } as const;
-
-      const created = await createTask(payload as any);
-
-      const mapped: Task = {
-        id: String(created.id),
-        columnId: statusToColumn[created.status] ?? "todo",
-        createdAt: created.createdAt,
-        title: created.title,
-        description: created.description ?? undefined,
-        endDate: created.endDate ?? null
-      } as Task;
-
-      setTasks((t) => [mapped, ...t]);
-      setIsCreateOpen(false);
-      setNewTitle("");
-      setNewDescription("");
-      setNewEndDate(undefined);
-    } catch (err) {
-      console.error("Failed to create task:", err);
-      // Could show an error toast here
-    } finally {
-      setIsSaving(false);
-    }
-  }
 
   const sensors = useSensors(
     useSensor(MouseSensor),
@@ -291,7 +314,7 @@ export function KanbanBoard() {
                 <div className="flex">
                   <Button
                     onClick={() => setIsCreateOpen(true)}
-                    className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-600"
                   >
                     <Plus className="mr-2" size={16} /> New Task
                   </Button>
@@ -301,6 +324,7 @@ export function KanbanBoard() {
                   column={col}
                   tasks={tasks.filter((task) => task.columnId === col.id)}
                   onDelete={handleDeleteTask}
+                  onEdit={handleEditTask}
                 />
               </div>
             ) : (
@@ -309,56 +333,61 @@ export function KanbanBoard() {
                 column={col}
                 tasks={tasks.filter((task) => task.columnId === col.id)}
                 onDelete={handleDeleteTask}
+                onEdit={handleEditTask}
               />
             )
           ))}
         </SortableContext>
       </BoardContainer>
 
-      {/* Create Task Modal */}
-      {
-        isCreateOpen &&
-        createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setIsCreateOpen(false)} />
-            <Card className="z-10 w-full max-w-lg mx-4">
-              <CardHeader>
-                <h3 className="text-lg font-semibold">Create New Task</h3>
-                <p className="text-sm text-muted-foreground">Add a title (required) and optional details.</p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm mb-1">Title *</label>
-                    <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Task title" />
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1">Description</label>
-                    <textarea
-                      className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 dark:border-gray-700 dark:bg-gray-800"
-                      rows={4}
-                      value={newDescription}
-                      onChange={(e) => setNewDescription(e.target.value)}
-                      placeholder="Optional description"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-1">End date</label>
-                    <input type="date" value={newEndDate ?? ""} onChange={(e) => setNewEndDate(e.target.value || undefined)} className="px-3 py-2 border rounded-md text-sm" />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="gap-2 justify-end">
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreateTask} disabled={isSaving || !newTitle.trim()}>
-                  {isSaving ? "Creating..." : "Create Task"}
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>,
-          document.body
-        )
-      }
+      <AlertDialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create New Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Add a title (required) and optional details.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="newTitle" className="text-sm font-medium">Title *</label>
+              <Input
+                id="newTitle"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Task title"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="newDescription" className="text-sm font-medium">Description</label>
+              <Input
+                id="newDescription"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Task description"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="newEndDate" className="text-sm font-medium">End Date</label>
+              <Input
+                id="newEndDate"
+                type="date"
+                value={newEndDate ?? ""}
+                onChange={(e) => setNewEndDate(e.target.value || undefined)}
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isSaving || !newTitle.trim()}
+              onClick={handleCreateTask}
+            >
+              {isSaving ? "Creating..." : "Create Task"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {
         "document" in window &&
@@ -403,7 +432,12 @@ export function KanbanBoard() {
 
     const activeTask = active.data.current?.task as Task;
     const newStatus = columnToStatus[activeTask.columnId as ColumnId];
-    updateTask(String(activeTask.id), newStatus).catch((error) => {
+    updateTask(String(activeTask.id), {
+      title: activeTask.title,
+      description: activeTask.description,
+      endDate: activeTask.endDate,
+      status: newStatus as "TODO" | "IN_PROGRESS" | "DONE"
+    }).catch((error) => {
       console.error('Error updating task status:', error);
     });
 

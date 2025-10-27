@@ -9,6 +9,7 @@ import {
 import { cva } from "class-variance-authority";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { ScrollArea, ScrollBar } from "../ui/scroll-area";
+import type { UpdateTaskPayload } from "@/lib/api";
 
 export interface Column {
   id: UniqueIdentifier;
@@ -27,9 +28,10 @@ interface BoardColumnProps {
   tasks: Task[];
   isOverlay?: boolean;
   onDelete?: (taskId: UniqueIdentifier) => void;
+  onEdit?: (taskId: UniqueIdentifier, updates: UpdateTaskPayload) => Promise<void>;
 }
 
-export function BoardColumn({ column, tasks, isOverlay, onDelete }: BoardColumnProps) {
+export function BoardColumn({ column, tasks, isOverlay, onDelete, onEdit }: BoardColumnProps) {
   const tasksIds = useMemo(() => {
     return tasks.map((task) => task.id);
   }, [tasks]);
@@ -83,7 +85,7 @@ export function BoardColumn({ column, tasks, isOverlay, onDelete }: BoardColumnP
         <CardContent className="flex flex-grow flex-col gap-2 p-2">
           <SortableContext items={tasksIds}>
             {tasks.map((task) => (
-              <TaskCard task={task} key={task.id} onDelete={onDelete} />
+              <TaskCard task={task} key={task.id} onDelete={onDelete} onEdit={onEdit} />
             ))}
           </SortableContext>
         </CardContent>
