@@ -22,6 +22,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/tasks")
 public class TaskController {
+
     private final TaskService taskService;
 
     @Autowired
@@ -37,18 +38,21 @@ public class TaskController {
 
         Task saved;
         try {
-            saved = taskService.createTask(username, req.title(), req.description(), req.deadline(), req.status());
+            saved = taskService.createTask(username, req.title(), req.description(), req.endDate(), req.status());
         } catch (IllegalArgumentException e) {
             throw new ResourceNotFoundException(e.getMessage());
         }
 
         Optional<String> description = Optional.ofNullable(saved.getDescription());
-        Optional<String> deadline = Optional.ofNullable(saved.getDeadline()).map(Instant::toString);
+        Optional<String> endDate = Optional.ofNullable(saved.getEndDate()).map(Instant::toString);
+        Optional<String> createdAt = Optional.ofNullable(saved.getCreatedAt()).map(Instant::toString);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "id", saved.getId(),
                 "title", saved.getTitle(),
                 "description", description,
-                "deadline", deadline,
+                "endDate", endDate,
+                "createdAt", createdAt,
                 "status", saved.getStatus().name()));
     }
 
@@ -65,7 +69,8 @@ public class TaskController {
                 tasks.stream()
                         .map(task -> {
                             Optional<String> description = Optional.ofNullable(task.getDescription());
-                            Optional<String> deadline = Optional.ofNullable(task.getDeadline()).map(Instant::toString);
+                            Optional<String> endDate = Optional.ofNullable(task.getEndDate()).map(Instant::toString);
+                            Optional<String> createdAt = Optional.ofNullable(task.getCreatedAt()).map(Instant::toString);
                             List<String> assignees = Optional.ofNullable(task.getAssignees())
                                     .map(t -> t.stream().map(Account::getUsername).toList())
                                     .orElse(List.of());
@@ -74,7 +79,8 @@ public class TaskController {
                                     "id", task.getId(),
                                     "title", task.getTitle(),
                                     "description", description,
-                                    "deadline", deadline,
+                                    "endDate", endDate,
+                                    "createdAt", createdAt,
                                     "status", task.getStatus().name(),
                                     "owner", task.getOwner().getUsername(),
                                     "assignees", assignees);
@@ -93,7 +99,7 @@ public class TaskController {
                 id,
                 req.title(),
                 req.description(),
-                req.deadline(),
+                req.endDate(),
                 req.status());
 
         if (savedOpt.isEmpty()) {
@@ -102,12 +108,12 @@ public class TaskController {
         Task saved = savedOpt.get();
 
         Optional<String> description = Optional.ofNullable(saved.getDescription());
-        Optional<String> deadline = Optional.ofNullable(saved.getDeadline()).map(d -> d.toString());
+        Optional<String> endDate = Optional.ofNullable(saved.getEndDate()).map(d -> d.toString());
         return ResponseEntity.ok(Map.of(
                 "id", saved.getId(),
                 "title", saved.getTitle(),
                 "description", description,
-                "deadline", deadline,
+                "endDate", endDate,
                 "status", saved.getStatus().name()));
     }
 
@@ -168,18 +174,21 @@ public class TaskController {
     public static record CreateTaskRequest(
             @NotEmpty(message = "title cannot be empty") String title,
             String description,
-            String deadline,
+            String endDate,
             String status) {
+
     }
 
     public static record UpdateTaskRequest(
             String title,
             String description,
-            String deadline,
+            String endDate,
             String status) {
+
     }
 
     public static record AssignUnassignTaskRequest(List<String> username) {
+
     }
 
 }

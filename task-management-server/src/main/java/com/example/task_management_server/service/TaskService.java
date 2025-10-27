@@ -28,7 +28,7 @@ public class TaskService {
             String username,
             String title,
             String description,
-            String deadlineStr,
+            String endDateStr,
             String statusStr) {
 
         Account owner = userRepo.findById(username).orElseThrow(() -> new IllegalArgumentException("user not found"));
@@ -37,8 +37,8 @@ public class TaskService {
                 .ofNullable(statusStr)
                 .map(Task.TaskStatus::valueOf)
                 .orElse(Task.TaskStatus.TODO);
-        Instant deadline = Optional
-                .ofNullable(deadlineStr)
+        Instant endDate = Optional
+                .ofNullable(endDateStr)
                 .map(OffsetDateTime::parse)
                 .map(OffsetDateTime::toInstant)
                 .orElse(null);
@@ -46,7 +46,7 @@ public class TaskService {
         Task task = Task.builder()
                 .title(title)
                 .description(description)
-                .deadline(deadline)
+                .endDate(endDate)
                 .status(status)
                 .owner(owner)
                 .build();
@@ -70,16 +70,18 @@ public class TaskService {
             Long id,
             String title,
             String description,
-            String deadlineStr,
+            String endDateStr,
             String statusStr) {
 
         Optional<Task> taskOpt = taskRepo.findById(id);
-        if (taskOpt.isEmpty())
+        if (taskOpt.isEmpty()) {
             return Optional.empty();
+        }
 
         Task task = taskOpt.get();
-        if (!task.getOwner().getUsername().equals(username))
+        if (!task.getOwner().getUsername().equals(username)) {
             return Optional.empty();
+        }
 
         String newTitle = Optional
                 .ofNullable(title)
@@ -91,16 +93,16 @@ public class TaskService {
                 .ofNullable(statusStr)
                 .map(Task.TaskStatus::valueOf)
                 .orElse(task.getStatus());
-        Instant newDeadline = Optional
-                .ofNullable(deadlineStr)
+        Instant newEndDate = Optional
+                .ofNullable(endDateStr)
                 .map(OffsetDateTime::parse)
                 .map(OffsetDateTime::toInstant)
-                .orElse(task.getDeadline());
+                .orElse(task.getEndDate());
 
         Task updated = task.toBuilder()
                 .title(newTitle)
                 .description(newDescription)
-                .deadline(newDeadline)
+                .endDate(newEndDate)
                 .status(newStatus)
                 .build();
 
@@ -109,12 +111,14 @@ public class TaskService {
 
     public boolean deleteIfOwner(String username, Long id) {
         Optional<Task> taskOpt = taskRepo.findById(id);
-        if (taskOpt.isEmpty())
+        if (taskOpt.isEmpty()) {
             return false;
+        }
 
         Task task = taskOpt.get();
-        if (!task.getOwner().getUsername().equals(username))
+        if (!task.getOwner().getUsername().equals(username)) {
             return false;
+        }
 
         taskRepo.delete(task);
         return true;
@@ -122,16 +126,19 @@ public class TaskService {
 
     public Optional<Task> assignTask(String username, Long id, List<String> targetUsernames) {
         Optional<Task> taskOpt = taskRepo.findById(id);
-        if (taskOpt.isEmpty())
+        if (taskOpt.isEmpty()) {
             return Optional.empty();
+        }
 
         Task task = taskOpt.get();
-        if (!task.getOwner().getUsername().equals(username))
+        if (!task.getOwner().getUsername().equals(username)) {
             return Optional.empty();
+        }
 
         List<Account> targets = userRepo.findAllById(targetUsernames);
-        if (targets.isEmpty())
+        if (targets.isEmpty()) {
             return Optional.empty();
+        }
 
         task.getAssignees().addAll(targets);
         return Optional.of(taskRepo.save(task));
@@ -139,16 +146,19 @@ public class TaskService {
 
     public Optional<Task> unassignTask(String username, Long id, List<String> targetUsernames) {
         Optional<Task> taskOpt = taskRepo.findById(id);
-        if (taskOpt.isEmpty())
+        if (taskOpt.isEmpty()) {
             return Optional.empty();
+        }
 
         Task task = taskOpt.get();
-        if (!task.getOwner().getUsername().equals(username))
+        if (!task.getOwner().getUsername().equals(username)) {
             return Optional.empty();
+        }
 
         List<Account> targets = userRepo.findAllById(targetUsernames);
-        if (targets.isEmpty())
+        if (targets.isEmpty()) {
             return Optional.empty();
+        }
 
         task.getAssignees().removeAll(targets);
         return Optional.of(taskRepo.save(task));

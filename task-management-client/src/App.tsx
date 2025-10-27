@@ -54,7 +54,7 @@ function App() {
               ) : (
                 <div className="flex flex-col items-center justify-center">
                   <div className="text-center mb-10">
-                    <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-2">
+                    <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
                       Welcome to Manado
                     </h1>
                     <p className="text-xl text-gray-600 dark:text-gray-400">
@@ -76,16 +76,11 @@ function App() {
               )
             }
           </main>
-          <footer className="mt-10 mb-12 flex flex-col gap-6">
-            <div className="leading-7 [&:not(:first-child)]:mt-6">
-              <p className="font-bold ">
-                Manado: Task Management and To-Do List Application
-              </p>
-              <p>💻 with ❤️ by Roshani Ayu Pranasti © 2025</p>
-            </div>
+          <footer className="mt-10 mb-12 flex flex-col gap-2">
             <Button variant="link" asChild className="scroll-m-20 text-xl font-semibold tracking-tight">
               <a href="https://github.com/roshaniayu/task-management-application/tree/main" target="_blank">GitHub Source Code</a>
             </Button>
+            <p>💻 with ❤️ by Roshani Ayu Pranasti © 2025</p>
           </footer>
         </div >
       </ThemeProvider >

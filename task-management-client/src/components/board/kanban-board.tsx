@@ -21,8 +21,12 @@ import { type Task, TaskCard } from "./task-card";
 import type { Column } from "./board-column";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
-import { fetchTasks, updateTask } from "@/lib/api";
+import { fetchTasks, createTask, updateTask } from "@/lib/api";
 import type { ServerTask } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import Input from "@/components/ui/input";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Plus } from "lucide-react";
 
 const columnToStatus: Record<ColumnId, string> = {
   "todo": "TODO",
@@ -64,6 +68,13 @@ export function KanbanBoard() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Add Task modal state
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newEndDate, setNewEndDate] = useState<string | undefined>(undefined);
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     async function loadTasks() {
       setIsLoading(true);
@@ -77,12 +88,16 @@ export function KanbanBoard() {
           const columnId = (statusToColumn[t.status] ?? "todo") as ColumnId;
           const title = t.title;
           const description = t.description ?? null;
+          const endDate = t.endDate ?? null;
+          const createdAt = t.createdAt;
 
           return {
             id: String(t.id),
             columnId,
             title,
             description,
+            endDate,
+            createdAt
           } satisfies Task;
         });
 
@@ -101,6 +116,42 @@ export function KanbanBoard() {
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  // create task handler
+  async function handleCreateTask() {
+    if (!newTitle.trim()) return;
+    setIsSaving(true);
+    try {
+      const payload = {
+        title: newTitle.trim(),
+        description: newDescription ? newDescription.trim() : null,
+        endDate: newEndDate ? new Date(newEndDate).toISOString() : null,
+        status: "TODO"
+      } as const;
+
+      const created = await createTask(payload as any);
+
+      const mapped: Task = {
+        id: String(created.id),
+        columnId: statusToColumn[created.status] ?? "todo",
+        createdAt: created.createdAt,
+        title: created.title,
+        description: created.description ?? undefined,
+        endDate: created.endDate ?? null
+      } as Task;
+
+      setTasks((t) => [mapped, ...t]);
+      setIsCreateOpen(false);
+      setNewTitle("");
+      setNewDescription("");
+      setNewEndDate(undefined);
+    } catch (err) {
+      console.error("Failed to create task:", err);
+      // Could show an error toast here
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   const sensors = useSensors(
     useSensor(MouseSensor),
@@ -225,16 +276,80 @@ export function KanbanBoard() {
       <BoardContainer>
         <SortableContext items={columnsId}>
           {columns.map((col) => (
-            <BoardColumn
-              key={col.id}
-              column={col}
-              tasks={tasks.filter((task) => task.columnId === col.id)}
-            />
+            col.id === "todo" ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex">
+                  <Button
+                    onClick={() => setIsCreateOpen(true)}
+                    className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  >
+                    <Plus className="mr-2" size={16} /> New Task
+                  </Button>
+                </div>
+                <BoardColumn
+                  key={col.id}
+                  column={col}
+                  tasks={tasks.filter((task) => task.columnId === col.id)}
+                />
+              </div>
+            ) : (
+              <BoardColumn
+                key={col.id}
+                column={col}
+                tasks={tasks.filter((task) => task.columnId === col.id)}
+              />
+            )
           ))}
         </SortableContext>
       </BoardContainer>
 
-      {"document" in window &&
+      {/* Create Task Modal */}
+      {
+        isCreateOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setIsCreateOpen(false)} />
+            <Card className="z-10 w-full max-w-lg mx-4">
+              <CardHeader>
+                <h3 className="text-lg font-semibold">Create New Task</h3>
+                <p className="text-sm text-muted-foreground">Add a title (required) and optional details.</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm mb-1">Title *</label>
+                    <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Task title" />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Description</label>
+                    <textarea
+                      className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 dark:border-gray-700 dark:bg-gray-800"
+                      rows={4}
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      placeholder="Optional description"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">End date</label>
+                    <input type="date" value={newEndDate ?? ""} onChange={(e) => setNewEndDate(e.target.value || undefined)} className="px-3 py-2 border rounded-md text-sm" />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="gap-2 justify-end">
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateTask} disabled={isSaving || !newTitle.trim()}>
+                  {isSaving ? "Creating..." : "Create Task"}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>,
+          document.body
+        )
+      }
+
+      {
+        "document" in window &&
         createPortal(
           <DragOverlay>
             {activeColumn && (
@@ -249,8 +364,9 @@ export function KanbanBoard() {
             {activeTask && <TaskCard task={activeTask} isOverlay />}
           </DragOverlay>,
           document.body
-        )}
-    </DndContext>
+        )
+      }
+    </DndContext >
   );
 
   function onDragStart(event: DragStartEvent) {

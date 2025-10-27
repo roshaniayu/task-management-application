@@ -66,10 +66,18 @@ export type ServerTask = {
   id: number;
   title: string;
   description?: string | null;
-  deadline?: string | null;
+  endDate?: string | null;
+  createdAt: string;
   status: "TODO" | "IN_PROGRESS" | "DONE";
   owner: string;
   assignees: string[];
+};
+
+export type CreateTaskPayload = {
+  title: string;
+  description?: string | null;
+  endDate?: string | null;
+  status?: "TODO" | "IN_PROGRESS" | "DONE";
 };
 
 /**
@@ -86,6 +94,20 @@ export async function fetchTasks(): Promise<ServerTask[]> {
   return request<ServerTask[]>("/tasks", {
     method: "GET",
     headers,
+  });
+}
+
+export async function createTask(payload: CreateTaskPayload): Promise<ServerTask> {
+  const auth = getAuth();
+  const headers: Record<string, string> = {};
+  if (auth?.token) {
+    headers["Authorization"] = `Bearer ${auth.token}`;
+  }
+
+  return request<ServerTask>("/tasks", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
   });
 }
 
