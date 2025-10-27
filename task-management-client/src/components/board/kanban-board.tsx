@@ -25,6 +25,7 @@ import { fetchTasks, createTask, updateTask, deleteTask } from "@/lib/api";
 import type { TaskResponse, TaskPayload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -36,6 +37,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Plus } from "lucide-react";
+import { toast } from "sonner"
 
 export const columnToStatus: Record<ColumnId, "TODO" | "IN_PROGRESS" | "DONE"> = {
   "todo": "TODO",
@@ -72,11 +74,11 @@ export function KanbanBoard() {
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  // Add Task modal state
+  // Add task modal state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -111,9 +113,8 @@ export function KanbanBoard() {
       setNewTitle("");
       setNewDescription("");
       setNewEndDate(undefined);
-    } catch (err) {
-      console.error("Failed to create task:", err);
-      // Could show an error toast here
+    } catch (error: any) {
+      toast.error("Failed to create task:", error.message);
     } finally {
       setIsSaving(false);
     }
@@ -132,9 +133,8 @@ export function KanbanBoard() {
             : task
         )
       );
-    } catch (error) {
-      console.error('Failed to update task:', error);
-      setLoadError('Failed to update task. Please try again.');
+    } catch (error: any) {
+      toast.error("Failed to update task:", error.message);
       throw error;
     }
   };
@@ -143,16 +143,15 @@ export function KanbanBoard() {
     try {
       await deleteTask(String(taskId));
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
-    } catch (error) {
-      console.error('Failed to delete task:', error);
-      setLoadError('Failed to delete task. Please try again.');
+    } catch (error: any) {
+      toast.error("Failed to delete task:", error.message);
     }
   };
 
   useEffect(() => {
     async function loadTasks() {
       setIsLoading(true);
-      setLoadError(null);
+      setError(null);
 
       try {
         const serverTasks: TaskResponse[] = await fetchTasks();
@@ -178,9 +177,8 @@ export function KanbanBoard() {
         });
 
         setTasks(mapped);
-      } catch (err: any) {
-        console.error("Failed to load tasks:", err);
-        setLoadError(err?.message || String(err));
+      } catch (error: any) {
+        setError(error?.message || String(error));
       } finally {
         setIsLoading(false);
       }
@@ -302,26 +300,60 @@ export function KanbanBoard() {
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
     >
-      {isLoading && (
-        <div className="mb-4 text-sm text-muted-foreground">Loading tasks...</div>
-      )}
-      {loadError && (
-        <div className="mb-4 text-sm text-red-500">Failed to load tasks: {loadError}</div>
-      )}
-
-      <BoardContainer>
-        <SortableContext items={columnsId}>
-          {columns.map((col) => (
-            col.id === "todo" ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex">
-                  <Button
-                    onClick={() => setIsCreateOpen(true)}
-                    className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-600"
-                  >
-                    <Plus className="mr-2" size={16} /> New Task
-                  </Button>
+      {isLoading ? (
+        <div className="px-2 md:px-0 flex lg:justify-center">
+          <div className="flex flex-row gap-4 items-end justify-center">
+            {columns.map((col) => (
+              col.id === "todo" ? (
+                <div className="flex flex-col gap-2" key={col.id}>
+                  <div className="flex">
+                    <Skeleton className="h-10 w-30" />
+                  </div>
+                  <Skeleton className="h-[580px] max-h-[580px] w-[350px] mb-4" />
                 </div>
+              ) : (
+                <Skeleton className="h-[580px] max-h-[580px] w-[350px] mb-4" />
+              )
+            ))}
+          </div>
+        </div>
+      ) : (error ? (
+        <div className="px-2 md:px-0 flex lg:justify-center">
+          <div className="h-[640px] max-h-[640px] flex flex-col gap-4 items-center justify-center max-w-md text-center">
+            <h3 className="text-xl font-semibold">⚠️ Unable to Load Tasks</h3>
+            <p className="text-muted-foreground">Error: {error}. Please try again later.</p>
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              className="mt-4"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <BoardContainer>
+          <SortableContext items={columnsId}>
+            {columns.map((col) => (
+              col.id === "todo" ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex">
+                    <Button
+                      onClick={() => setIsCreateOpen(true)}
+                      className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-600"
+                    >
+                      <Plus className="mr-2" size={16} /> New Task
+                    </Button>
+                  </div>
+                  <BoardColumn
+                    key={col.id}
+                    column={col}
+                    tasks={tasks.filter((task) => task.columnId === col.id)}
+                    onDelete={handleDeleteTask}
+                    onEdit={handleEditTask}
+                  />
+                </div>
+              ) : (
                 <BoardColumn
                   key={col.id}
                   column={col}
@@ -329,19 +361,11 @@ export function KanbanBoard() {
                   onDelete={handleDeleteTask}
                   onEdit={handleEditTask}
                 />
-              </div>
-            ) : (
-              <BoardColumn
-                key={col.id}
-                column={col}
-                tasks={tasks.filter((task) => task.columnId === col.id)}
-                onDelete={handleDeleteTask}
-                onEdit={handleEditTask}
-              />
-            )
-          ))}
-        </SortableContext>
-      </BoardContainer>
+              )
+            ))}
+          </SortableContext>
+        </BoardContainer>
+      ))}
 
       <AlertDialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <AlertDialogContent>
@@ -392,24 +416,21 @@ export function KanbanBoard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {
-        "document" in window &&
-        createPortal(
-          <DragOverlay>
-            {activeColumn && (
-              <BoardColumn
-                isOverlay
-                column={activeColumn}
-                tasks={tasks.filter(
-                  (task) => task.columnId === activeColumn.id
-                )}
-              />
-            )}
-            {activeTask && <TaskCard task={activeTask} isOverlay />}
-          </DragOverlay>,
-          document.body
-        )
-      }
+      {"document" in window && createPortal(
+        <DragOverlay>
+          {activeColumn && (
+            <BoardColumn
+              isOverlay
+              column={activeColumn}
+              tasks={tasks.filter(
+                (task) => task.columnId === activeColumn.id
+              )}
+            />
+          )}
+          {activeTask && <TaskCard task={activeTask} isOverlay />}
+        </DragOverlay>,
+        document.body
+      )}
     </DndContext >
   );
 

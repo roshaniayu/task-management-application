@@ -37,9 +37,9 @@ export function LoginForm({ onSwitch, onAuthSuccess }: LoginFormProps) {
       });
 
       onAuthSuccess(response.token, response.username);
-    } catch (err: any) {
-      if (err.status === 400) {
-        const errorFields = err.errorFields || {};
+    } catch (error: any) {
+      if (error.status === 400) {
+        const errorFields = error.errorFields || {};
 
         const newErrors: { username?: string; password?: string } = {};
         if (errorFields.username) {
@@ -52,7 +52,7 @@ export function LoginForm({ onSwitch, onAuthSuccess }: LoginFormProps) {
         setFieldErrors(newErrors);
       }
 
-      setError(err.status === 400 ? "" : err.message || "Failed to sign in");
+      setError(error.status === 400 ? "" : error.message || "Failed to sign in");
     } finally {
       setIsLoading(false);
     }

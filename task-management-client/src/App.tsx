@@ -80,7 +80,7 @@ function App() {
             <Button variant="link" asChild className="scroll-m-20 text-xl font-semibold tracking-tight">
               <a href="https://github.com/roshaniayu/task-management-application/tree/main" target="_blank">GitHub Source Code</a>
             </Button>
-            <p>💻 with ❤️ by Roshani Ayu Pranasti © 2025</p>
+            <p className="text-s">💻 with ❤️ by Roshani Ayu Pranasti © 2025</p>
           </footer>
         </div >
       </ThemeProvider >

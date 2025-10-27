@@ -43,9 +43,9 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
       });
 
       onAuthSuccess(response.token, response.username);
-    } catch (err: any) {
-      if (err.status === 400) {
-        const errorFields = err.errorFields || {};
+    } catch (error: any) {
+      if (error.status === 400) {
+        const errorFields = error.errorFields || {};
 
         const newErrors: { username?: string; email?: string; password?: string; confirmPassword?: string } = {};
         if (errorFields.username) {
@@ -64,7 +64,7 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
         setFieldErrors(newErrors);
       }
 
-      setError(err.status === 400 ? "" : err.message || "Failed to register");
+      setError(error.status === 400 ? "" : error.message || "Failed to register");
     } finally {
       setIsLoading(false);
     }
