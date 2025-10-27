@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { BoardColumn, BoardContainer } from "./board-column";
@@ -21,6 +21,21 @@ import { type Task, TaskCard } from "./task-card";
 import type { Column } from "./board-column";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
+import { fetchTasks, updateTask } from "@/lib/api";
+import type { ServerTask } from "@/lib/api";
+
+const columnToStatus: Record<ColumnId, string> = {
+  "todo": "TODO",
+  "in-progress": "IN_PROGRESS",
+  "done": "DONE",
+};
+
+const statusToColumn: Record<string, ColumnId> = {
+  TODO: "todo",
+  IN_PROGRESS: "in-progress",
+  DONE: "done",
+};
+
 
 const defaultCols = [
   {
@@ -39,79 +54,49 @@ const defaultCols = [
 
 export type ColumnId = (typeof defaultCols)[number]["id"];
 
-const initialTasks: Task[] = [
-  {
-    id: "task1",
-    columnId: "done",
-    content: "Project initiation and planning",
-  },
-  {
-    id: "task2",
-    columnId: "done",
-    content: "Gather requirements from stakeholders",
-  },
-  {
-    id: "task3",
-    columnId: "done",
-    content: "Create wireframes and mockups",
-  },
-  {
-    id: "task4",
-    columnId: "in-progress",
-    content: "Develop homepage layout",
-  },
-  {
-    id: "task5",
-    columnId: "in-progress",
-    content: "Design color scheme and typography",
-  },
-  {
-    id: "task6",
-    columnId: "todo",
-    content: "Implement user authentication",
-  },
-  {
-    id: "task7",
-    columnId: "todo",
-    content: "Build contact us page",
-  },
-  {
-    id: "task8",
-    columnId: "todo",
-    content: "Create product catalog",
-  },
-  {
-    id: "task9",
-    columnId: "todo",
-    content: "Develop about us page",
-  },
-  {
-    id: "task10",
-    columnId: "todo",
-    content: "Optimize website for mobile devices",
-  },
-  {
-    id: "task11",
-    columnId: "todo",
-    content: "Integrate payment gateway",
-  },
-  {
-    id: "task12",
-    columnId: "todo",
-    content: "Perform testing and bug fixing",
-  },
-  {
-    id: "task13",
-    columnId: "todo",
-    content: "Launch website and deploy to server",
-  },
-];
 export function KanbanBoard() {
   const [columns, setColumns] = useState<Column[]>(defaultCols);
   const pickedUpTaskColumn = useRef<ColumnId | null>(null);
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
 
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadTasks() {
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        const serverTasks: ServerTask[] = await fetchTasks();
+
+        const mapped: Task[] = serverTasks.map((t) => {
+
+          const columnId = (statusToColumn[t.status] ?? "todo") as ColumnId;
+          const title = t.title;
+          const description = t.description ?? null;
+
+          return {
+            id: String(t.id),
+            columnId,
+            title,
+            description,
+          } satisfies Task;
+        });
+
+        setTasks(mapped);
+      } catch (err: any) {
+        console.error("Failed to load tasks:", err);
+        setLoadError(err?.message || String(err));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadTasks();
+  }, []);
 
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
 
@@ -150,7 +135,7 @@ export function KanbanBoard() {
           active.id,
           pickedUpTaskColumn.current
         );
-        return `Picked up Task ${active.data.current.task.content
+        return `Picked up Task ${active.data.current.task.title
           } at position: ${taskPosition + 1} of ${tasksInColumn.length
           } in column ${column?.title}`;
       }
@@ -174,7 +159,7 @@ export function KanbanBoard() {
           over.data.current.task.columnId
         );
         if (over.data.current.task.columnId !== pickedUpTaskColumn.current) {
-          return `Task ${active.data.current.task.content
+          return `Task ${active.data.current.task.title
             } was moved over column ${column?.title} in position ${taskPosition + 1
             } of ${tasksInColumn.length}`;
         }
@@ -230,6 +215,13 @@ export function KanbanBoard() {
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
     >
+      {isLoading && (
+        <div className="mb-4 text-sm text-muted-foreground">Loading tasks...</div>
+      )}
+      {loadError && (
+        <div className="mb-4 text-sm text-red-500">Failed to load tasks: {loadError}</div>
+      )}
+
       <BoardContainer>
         <SortableContext items={columnsId}>
           {columns.map((col) => (
@@ -280,6 +272,14 @@ export function KanbanBoard() {
     setActiveTask(null);
 
     const { active, over } = event;
+
+    const activeTask = active.data.current?.task as Task;
+    const newStatus = columnToStatus[activeTask.columnId as ColumnId];
+    updateTask(String(activeTask.id), newStatus).catch((error) => {
+      console.error('Error updating task status:', error);
+    });
+
+
     if (!over) return;
 
     const activeId = active.id;
@@ -296,7 +296,6 @@ export function KanbanBoard() {
 
     setColumns((columns) => {
       const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
-
       const overColumnIndex = columns.findIndex((col) => col.id === overId);
 
       return arrayMove(columns, activeColumnIndex, overColumnIndex);

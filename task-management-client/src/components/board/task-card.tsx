@@ -11,7 +11,8 @@ import { type ColumnId } from "./kanban-board";
 export interface Task {
   id: UniqueIdentifier;
   columnId: ColumnId;
-  content: string;
+  title: string;
+  description: string | null;
 }
 
 interface TaskCardProps {
@@ -77,12 +78,12 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
           <span className="sr-only">Move task</span>
           <GripVertical />
         </Button>
-        <Badge variant={"outline"} className="ml-auto font-semibold">
-          Task
+        <Badge variant={"secondary"} className="ml-auto text-muted-foreground">
+          TSK-{task.id}
         </Badge>
       </CardHeader>
       <CardContent className="px-3 pt-3 pb-6 text-left whitespace-pre-wrap">
-        {task.content}
+        {task.title}
       </CardContent>
     </Card>
   );

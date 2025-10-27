@@ -11,9 +11,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
-
-    static final String AUTH_HEADER_PREFIX = "Bearer ";
+    ;
     private static final String AUTH_HEADER = "Authorization";
+    private static final String AUTH_HEADER_PREFIX = "Bearer ";
     private final JwtService jwtService;
 
     @Autowired
@@ -27,6 +27,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             @NonNull HttpServletResponse response, @NonNull Object handler)
             throws AuthenticationException {
 
+        if (request.getMethod().equals("OPTIONS")) {
+            return true;
+        }
+
         String authHeader = request.getHeader(AUTH_HEADER);
         if (authHeader != null && authHeader.startsWith(AUTH_HEADER_PREFIX)) {
             String token = authHeader.substring(AUTH_HEADER_PREFIX.length());
@@ -37,6 +41,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             }
         }
 
-        throw new AuthenticationException("token not found");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        return false;
     }
 }

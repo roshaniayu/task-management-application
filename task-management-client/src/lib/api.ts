@@ -18,13 +18,12 @@ const DEFAULT_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
 async function request<T>(path: string, options: RequestInit = {}, base = DEFAULT_BASE): Promise<T> {
   const url = `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
-
   const res = await fetch(url, {
+    ...options,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
-    ...options,
   });
 
   if (!res.ok) {
@@ -47,6 +46,8 @@ async function request<T>(path: string, options: RequestInit = {}, base = DEFAUL
   return (await res.text()) as unknown as T;
 }
 
+import { getAuth } from "./auth";
+
 export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
   return request<AuthResponse>("/auth/register", {
     method: "POST",
@@ -58,6 +59,47 @@ export async function signInUser(payload: SignInPayload): Promise<AuthResponse> 
   return request<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export type ServerTask = {
+  id: number;
+  title: string;
+  description?: string | null;
+  deadline?: string | null;
+  status: "TODO" | "IN_PROGRESS" | "DONE";
+  owner: string;
+  assignees: string[];
+};
+
+/**
+ * Fetch tasks for the authenticated user. Automatically adds Authorization header
+ * when a token is present in local storage.
+ */
+export async function fetchTasks(): Promise<ServerTask[]> {
+  const auth = getAuth();
+  const headers: Record<string, string> = {};
+  if (auth?.token) {
+    headers["Authorization"] = `Bearer ${auth.token}`;
+  }
+
+  return request<ServerTask[]>("/tasks", {
+    method: "GET",
+    headers,
+  });
+}
+
+export async function updateTask(taskId: string, status: string): Promise<void> {
+  const auth = getAuth();
+  const headers: Record<string, string> = {};
+  if (auth?.token) {
+    headers["Authorization"] = `Bearer ${auth.token}`;
+  }
+
+  await request<void>(`/tasks/${taskId}`, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({ status }),
   });
 }
 

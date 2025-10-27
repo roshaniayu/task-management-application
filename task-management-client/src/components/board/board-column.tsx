@@ -8,8 +8,6 @@ import {
 } from "./task-card";
 import { cva } from "class-variance-authority";
 import { Card, CardContent, CardHeader } from "../ui/card";
-import { Button } from "../ui/button";
-import { GripVertical } from "lucide-react";
 import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 
 export interface Column {
@@ -37,8 +35,6 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 
   const {
     setNodeRef,
-    attributes,
-    listeners,
     transform,
     transition,
     isDragging,
@@ -79,17 +75,8 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
         dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
       })}
     >
-      <CardHeader className="p-4 font-semibold border-b-2 text-left flex flex-row space-between items-center">
-        <Button
-          variant={"ghost"}
-          {...attributes}
-          {...listeners}
-          className=" p-1 text-primary/50 -ml-2 h-auto cursor-grab relative"
-        >
-          <span className="sr-only">{`Move column: ${column.title}`}</span>
-          <GripVertical />
-        </Button>
-        <span className="ml-auto"> {column.title}</span>
+      <CardHeader className="p-4 font-semibold border-b-2 text-center">
+        <span>{column.title}</span>
       </CardHeader>
       <ScrollArea>
         <CardContent className="flex flex-grow flex-col gap-2 p-2">
