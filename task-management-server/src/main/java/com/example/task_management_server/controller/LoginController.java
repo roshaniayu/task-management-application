@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,22 +56,35 @@ public class LoginController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
         Account account = accountService.authenticate(req.username(), req.password());
         if (account == null) {
-            throw new AuthenticationException("invalid username or password");
+            throw new AuthenticationException("Invalid username or password");
         }
         String token = jwtService.generateToken(account.getUsername());
+
         return ResponseEntity.ok(Map.of("username", account.getUsername(), "token", token));
     }
 
     public static record RegisterRequest(
-            @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "Username can only contain alphanumeric characters") String username,
-            @Email(message = "Email address is invalid") String email,
-            @NotEmpty(message = "Password cannot be empty") String password
-    ) {
+            @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "Username can only contain alphanumeric characters")
+            String username,
 
+            @NotEmpty(message = "Email cannot be empty")
+            @Email(message = "Please provide a valid email address")
+            String email,
+
+            @NotEmpty(message = "Password cannot be empty")
+            @Size(min = 8, message = "Password must be at least 8 characters long")
+            @Pattern(regexp = ".*[A-Z].*", message = "Password must contain at least one uppercase letter")
+            @Pattern(regexp = ".*[a-z].*", message = "Password must contain at least one lowercase letter")
+            @Pattern(regexp = ".*\\d.*", message = "Password must contain at least one digit")
+            @Pattern(regexp = ".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*", message = "Password must contain at least one special character")
+            String password) {
     }
 
     public static record LoginRequest(
-            @NotEmpty(message = "username cannot be empty") String username,
-            @NotEmpty(message = "password cannot be empty") String password) {
+            @NotEmpty(message = "Username cannot be empty")
+            String username,
+
+            @NotEmpty(message = "Password cannot be empty")
+            String password) {
     }
 }

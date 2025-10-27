@@ -22,7 +22,7 @@ import type { Column } from "./board-column";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
 import { fetchTasks, createTask, updateTask, deleteTask } from "@/lib/api";
-import type { ServerTask, TaskPayload } from "@/lib/api";
+import type { TaskResponse, TaskPayload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -52,7 +52,7 @@ export const statusToColumn: Record<"TODO" | "IN_PROGRESS" | "DONE", ColumnId> =
 const defaultCols = [
   {
     id: "todo" as const,
-    title: "Todo",
+    title: "To Do",
   },
   {
     id: "in-progress" as const,
@@ -155,7 +155,7 @@ export function KanbanBoard() {
       setLoadError(null);
 
       try {
-        const serverTasks: ServerTask[] = await fetchTasks();
+        const serverTasks: TaskResponse[] = await fetchTasks();
 
         const mapped: Task[] = serverTasks.map((t) => {
 

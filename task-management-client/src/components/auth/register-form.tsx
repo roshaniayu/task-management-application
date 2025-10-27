@@ -17,22 +17,24 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
     password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState<string>();
+  const [fieldErrors, setFieldErrors] = useState<{
+    username?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState<string>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // disable default form submissions
 
     setError(undefined);
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
+    setFieldErrors({});
     setIsLoading(true);
+
     try {
       const response = await registerUser({
         username: formData.username,
@@ -42,7 +44,27 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
 
       onAuthSuccess(response.token, response.username);
     } catch (err: any) {
-      setError(err.message || "Failed to register");
+      if (err.status === 400) {
+        const errorFields = err.errorFields || {};
+
+        const newErrors: { username?: string; email?: string; password?: string; confirmPassword?: string } = {};
+        if (errorFields.username) {
+          newErrors.username = errorFields.username;
+        }
+        if (errorFields.email) {
+          newErrors.email = errorFields.email;
+        }
+        if (errorFields.password) {
+          newErrors.password = errorFields.password;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          newErrors.confirmPassword = "Passwords do not match";
+        }
+
+        setFieldErrors(newErrors);
+      }
+
+      setError(err.status === 400 ? "" : err.message || "Failed to register");
     } finally {
       setIsLoading(false);
     }
@@ -69,59 +91,74 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
           <label htmlFor="username" className="text-sm font-medium text-left block">
             Username
           </label>
-          <Input
-            id="username"
-            name="username"
-            type="text"
-            placeholder="johndoe"
-            required
-            value={formData.username}
-            onChange={handleChange}
-          />
+          <div className="relative">
+            <Input
+              id="username"
+              name="username"
+              type="text"
+              placeholder="johndoe"
+              value={formData.username}
+              onChange={handleChange}
+            />
+
+            {fieldErrors.username && (
+              <p className="mt-0.5 text-xs text-red-500 dark:text-red-400 text-left">{fieldErrors.username}</p>
+            )}
+          </div>
         </div>
         <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-medium text-left block">
             Email
           </label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="john@example.com"
-            required
-            value={formData.email}
-            onChange={handleChange}
-          />
+          <div className="relative">
+            <Input
+              id="email"
+              name="email"
+              type="text"
+              placeholder="john@example.com"
+              value={formData.email}
+              onChange={handleChange}
+            />
+
+            {fieldErrors.email && (
+              <p className="mt-0.5 text-xs text-red-500 dark:text-red-400 text-left">{fieldErrors.email}</p>
+            )}
+          </div>
         </div>
         <div className="space-y-2">
           <label htmlFor="password" className="text-sm font-medium text-left block">
             Password
           </label>
           <div className="relative">
-            <Input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              required
-              value={formData.password}
-              onChange={handleChange}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4 text-gray-500" />
-              ) : (
-                <Eye className="h-4 w-4 text-gray-500" />
-              )}
-              <span className="sr-only">
-                {showPassword ? "Hide password" : "Show password"}
-              </span>
-            </Button>
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={handleChange}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-500" />
+                )}
+                <span className="sr-only">
+                  {showPassword ? "Hide password" : "Show password"}
+                </span>
+              </Button>
+            </div>
+
+            {fieldErrors.password && (
+              <p className="mt-0.5 text-xs text-red-500 dark:text-red-400 text-left">{fieldErrors.password}</p>
+            )}
           </div>
         </div>
         <div className="space-y-2">
@@ -129,35 +166,42 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
             Confirm Password
           </label>
           <div className="relative">
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              required
-              value={formData.confirmPassword}
-              onChange={handleChange}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4 text-gray-500" />
-              ) : (
-                <Eye className="h-4 w-4 text-gray-500" />
-              )}
-              <span className="sr-only">
-                {showConfirmPassword ? "Hide password" : "Show password"}
-              </span>
-            </Button>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={formData.confirmPassword}
+                onChange={handleChange}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-500" />
+                )}
+                <span className="sr-only">
+                  {showConfirmPassword ? "Hide password" : "Show password"}
+                </span>
+              </Button>
+            </div>
+
+            {fieldErrors.confirmPassword && (
+              <p className="mt-0.5 text-xs text-red-500 dark:text-red-400 text-left">{fieldErrors.confirmPassword}</p>
+            )}
           </div>
         </div>
+
         {error && (
-          <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+          <p className="mt-0.5 text-sm text-red-500 dark:text-red-400">{error}</p>
         )}
+
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Creating account..." : "Register"}
         </Button>

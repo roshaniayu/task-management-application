@@ -27,14 +27,14 @@ async function request<T>(path: string, options: RequestInit = {}, base = DEFAUL
   });
 
   if (!res.ok) {
-    const text = await res.text();
     let err: any = new Error(res.statusText || "Request failed");
+
     try {
-      err = new Error(JSON.parse(text)?.message || text || res.statusText);
+      err = await res.json();
     } catch {
-      err = new Error(text || res.statusText);
+      err = await res.text() || res.statusText;
     }
-    (err as any).status = res.status;
+
     throw err;
   }
 
@@ -62,7 +62,7 @@ export async function signInUser(payload: SignInPayload): Promise<AuthResponse> 
   });
 }
 
-export type ServerTask = {
+export type TaskResponse = {
   id: number;
   title: string;
   description?: string | null;
@@ -87,41 +87,41 @@ export type UpdateTaskPayload = TaskPayload;
  * Fetch tasks for the authenticated user. Automatically adds Authorization header
  * when a token is present in local storage.
  */
-export async function fetchTasks(): Promise<ServerTask[]> {
+export async function fetchTasks(): Promise<TaskResponse[]> {
   const auth = getAuth();
   const headers: Record<string, string> = {};
   if (auth?.token) {
     headers["Authorization"] = `Bearer ${auth.token}`;
   }
 
-  return request<ServerTask[]>("/tasks", {
+  return request<TaskResponse[]>("/tasks", {
     method: "GET",
     headers,
   });
 }
 
-export async function createTask(payload: CreateTaskPayload): Promise<ServerTask> {
+export async function createTask(payload: CreateTaskPayload): Promise<TaskResponse> {
   const auth = getAuth();
   const headers: Record<string, string> = {};
   if (auth?.token) {
     headers["Authorization"] = `Bearer ${auth.token}`;
   }
 
-  return request<ServerTask>("/tasks", {
+  return request<TaskResponse>("/tasks", {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
   });
 }
 
-export async function updateTask(taskId: string, payload: UpdateTaskPayload): Promise<ServerTask> {
+export async function updateTask(taskId: string, payload: UpdateTaskPayload): Promise<TaskResponse> {
   const auth = getAuth();
   const headers: Record<string, string> = {};
   if (auth?.token) {
     headers["Authorization"] = `Bearer ${auth.token}`;
   }
 
-  return request<ServerTask>(`/tasks/${taskId}`, {
+  return request<TaskResponse>(`/tasks/${taskId}`, {
     method: "PUT",
     headers,
     body: JSON.stringify(payload),

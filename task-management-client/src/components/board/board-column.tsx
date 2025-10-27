@@ -58,7 +58,7 @@ export function BoardColumn({ column, tasks, isOverlay, onDelete, onEdit }: Boar
   };
 
   const variants = cva(
-    "h-[500px] max-h-[500px] w-[350px] max-w-full bg-primary-foreground flex flex-col flex-shrink-0 snap-center mb-4",
+    "h-[580px] max-h-[580px] w-[350px] max-w-full bg-primary-foreground flex flex-col flex-shrink-0 snap-center mb-4",
     {
       variants: {
         dragging: {

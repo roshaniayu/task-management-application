@@ -176,11 +176,10 @@ public class TaskController {
     }
 
     public static record CreateTaskRequest(
-            @NotEmpty(message = "title cannot be empty") String title,
+            @NotEmpty(message = "Title cannot be empty") String title,
             String description,
             String endDate,
             String status) {
-
     }
 
     public static record UpdateTaskRequest(
@@ -188,7 +187,6 @@ public class TaskController {
             String description,
             String endDate,
             String status) {
-
     }
 
     public static record AssignUnassignTaskRequest(List<String> username) {

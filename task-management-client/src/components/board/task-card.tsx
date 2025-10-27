@@ -280,6 +280,7 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
                 </div>
               </div>
               <AlertDialogFooter>
+                <AlertDialogCancel disabled={isEditing}>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   disabled={isEditing || !editTitle.trim()}
                   onClick={async () => {
@@ -301,7 +302,6 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
                 >
                   {isEditing ? "Saving..." : "Save changes"}
                 </AlertDialogAction>
-                <AlertDialogCancel disabled={isEditing}>Cancel</AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
