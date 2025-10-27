@@ -86,9 +86,6 @@ public class TaskService {
         String newTitle = Optional
                 .ofNullable(title)
                 .orElse(task.getTitle());
-        String newDescription = Optional
-                .ofNullable(description)
-                .orElse(task.getDescription());
         Task.TaskStatus newStatus = Optional
                 .ofNullable(statusStr)
                 .map(Task.TaskStatus::valueOf)
@@ -97,11 +94,11 @@ public class TaskService {
                 .ofNullable(endDateStr)
                 .map(OffsetDateTime::parse)
                 .map(OffsetDateTime::toInstant)
-                .orElse(task.getEndDate());
+                .orElse(null);
 
         Task updated = task.toBuilder()
                 .title(newTitle)
-                .description(newDescription)
+                .description(description)
                 .endDate(newEndDate)
                 .status(newStatus)
                 .build();

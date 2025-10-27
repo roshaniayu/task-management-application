@@ -53,6 +53,7 @@ public class TaskController {
                 "description", description,
                 "endDate", endDate,
                 "createdAt", createdAt,
+                "owner", saved.getOwner().getUsername(),
                 "status", saved.getStatus().name()));
     }
 
@@ -116,6 +117,7 @@ public class TaskController {
                 "title", saved.getTitle(),
                 "description", description,
                 "endDate", endDate,
+                "owner", saved.getOwner().getUsername(),
                 "status", saved.getStatus().name()));
     }
 

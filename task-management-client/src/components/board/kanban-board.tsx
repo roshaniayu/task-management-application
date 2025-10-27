@@ -99,10 +99,11 @@ export function KanbanBoard() {
       const mapped: Task = {
         id: String(created.id),
         columnId: statusToColumn[created.status] ?? "todo",
-        createdAt: created.createdAt,
         title: created.title,
         description: created.description ?? undefined,
-        endDate: created.endDate ?? null
+        endDate: created.endDate ?? null,
+        owner: created.owner,
+        createdAt: created.createdAt,
       } as Task;
 
       setTasks((t) => [mapped, ...t]);
@@ -117,16 +118,6 @@ export function KanbanBoard() {
       setIsSaving(false);
     }
   }
-
-  const handleDeleteTask = async (taskId: UniqueIdentifier) => {
-    try {
-      await deleteTask(String(taskId));
-      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
-    } catch (error) {
-      console.error('Failed to delete task:', error);
-      setLoadError('Failed to delete task. Please try again.');
-    }
-  };
 
   const handleEditTask = async (taskId: UniqueIdentifier, updates: TaskPayload) => {
     try {
@@ -148,6 +139,16 @@ export function KanbanBoard() {
     }
   };
 
+  const handleDeleteTask = async (taskId: UniqueIdentifier) => {
+    try {
+      await deleteTask(String(taskId));
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      setLoadError('Failed to delete task. Please try again.');
+    }
+  };
+
   useEffect(() => {
     async function loadTasks() {
       setIsLoading(true);
@@ -162,6 +163,7 @@ export function KanbanBoard() {
           const title = t.title;
           const description = t.description ?? null;
           const endDate = t.endDate ?? null;
+          const owner = t.owner;
           const createdAt = t.createdAt;
 
           return {
@@ -170,6 +172,7 @@ export function KanbanBoard() {
             title,
             description,
             endDate,
+            owner,
             createdAt
           } satisfies Task;
         });

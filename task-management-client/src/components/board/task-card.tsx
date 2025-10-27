@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cva } from "class-variance-authority";
 import { GripVertical, Calendar, Trash2, Pencil } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { type ColumnId, columnToStatus, statusToColumn } from "./kanban-board";
+import { type ColumnId, columnToStatus } from "./kanban-board";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,6 +35,7 @@ export interface Task {
   title: string;
   description: string | null;
   endDate: string | null;
+  owner: string;
   createdAt: string;
 }
 
@@ -166,7 +167,10 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
         )}
       </CardContent>
       <CardFooter className="px-3 py-2 flex justify-between items-center">
-        <div className="text-xs text-muted-foreground">Created on: {formatDate(new Date(task.createdAt))}</div>
+        <div className="flex flex-col gap-1 items-start">
+          <div className="text-xs text-muted-foreground">Owner: @{task.owner}</div>
+          <div className="text-xs text-muted-foreground">Created on: {formatDate(new Date(task.createdAt))}</div>
+        </div>
         <div className="flex gap-1">
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogTrigger asChild>
@@ -231,12 +235,13 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
               </AlertDialogHeader>
               <div className="py-4 flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="title" className="text-sm font-medium">Title</label>
+                  <label htmlFor="title" className="text-sm font-medium">Title *</label>
                   <Input
                     id="title"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     placeholder="Task title"
+                    required
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -276,14 +281,15 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
               </div>
               <AlertDialogFooter>
                 <AlertDialogAction
-                  disabled={isEditing}
+                  disabled={isEditing || !editTitle.trim()}
                   onClick={async () => {
-                    if (!onEdit) return;
+                    const trimmedTitle = editTitle.trim();
+                    if (!onEdit || !trimmedTitle) return;
                     setIsEditing(true);
                     try {
                       await onEdit(task.id, {
-                        title: editTitle,
-                        description: editDescription || null,
+                        title: trimmedTitle,
+                        description: editDescription.trim() || null,
                         endDate: editEndDate || null,
                         status: editStatus
                       });
