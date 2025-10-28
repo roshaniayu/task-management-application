@@ -23,14 +23,14 @@ Manado is a modern task management application that combines the visual efficien
 
 ### Backend Setup
 1. Navigate to server directory:
-   \`\`\`bash
+   ```bash
    cd task-management-server
-   \`\`\`
+   ```
 
 2. Install dependencies:
-   \`\`\`bash
+   ```bash
    mvn clean install
-   \`\`\`
+   ```
 
 3. Configure application.properties:
    ```properties
@@ -49,31 +49,31 @@ Manado is a modern task management application that combines the visual efficien
 
 ### Frontend Setup
 1. Navigate to client directory:
-   \`\`\`bash
+   ```bash
    cd task-management-client
-   \`\`\`
+   ```
 
 2. Install dependencies:
-   \`\`\`bash
+   ```bash
    yarn install
-   \`\`\`
+   ```
 
 ## Build and Run
 
 ### Backend
 1. Start the Spring Boot server:
-   \`\`\`bash
+   ```bash
    cd task-management-server
    mvn spring-boot:run
-   \`\`\`
+   ```
    Server will start on http://localhost:8080
 
 ### Frontend
 1. Start the development server:
-   \`\`\`bash
+   ```bash
    cd task-management-client
    npx vite
-   \`\`\`
+   ```
    Application will be available at http://localhost:5173
 
 ## Environment Links
@@ -81,7 +81,6 @@ Manado is a modern task management application that combines the visual efficien
 - **Frontend Development Server**: http://localhost:5173
 - **Backend API Server**: http://localhost:8080
 - **H2 Database Console**: http://localhost:8080/h2-console
-- **API Documentation**: http://localhost:8080/swagger-ui.html (when enabled)
 
 ## Tech Stack
 
@@ -98,28 +97,3 @@ Manado is a modern task management application that combines the visual efficien
 - JWT Authentication
 - REST API
 - Telegram Bot API integration
-
-## Application Objectives
-
-1. **Efficient Task Management**
-   - Provide an intuitive Kanban board interface
-   - Enable easy task creation, assignment, and tracking
-   - Create tasks with title, description, and due date
-   - Support real-time status updates through drag-and-drop
-
-2. **Enhanced Collaboration**
-   - Allow multiple user assignments per task
-   - Facilitate team coordination through shared task views
-
-3. **Seamless Communication**
-   - Integrate with Telegram for instant notifications
-
-4. **User Experience**
-   - Implement a clean, modern interface
-   - Support both dark and light themes
-   - Ensure responsive design across devices
-
-5. **Security**
-   - JWT-based authentication
-   - Secure password handling
-   - Protected API endpoints
