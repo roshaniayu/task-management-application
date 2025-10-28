@@ -68,7 +68,7 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
         setFieldErrors(newErrors);
       }
 
-      setError(error.status === 400 ? "" : error.message || "Failed to register");
+      setError(error.status === 400 ? "" : `Error: ${error.message || String(error)}. Please try again later.`);
     } finally {
       setIsLoading(false);
     }

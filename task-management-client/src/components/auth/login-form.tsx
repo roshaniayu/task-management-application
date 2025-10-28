@@ -52,7 +52,7 @@ export function LoginForm({ onSwitch, onAuthSuccess }: LoginFormProps) {
         setFieldErrors(newErrors);
       }
 
-      setError(error.status === 400 ? "" : error.message || "Failed to sign in");
+      setError(error.status === 400 ? "" : `Error: ${error.message || String(error)}. Please try again later.`);
     } finally {
       setIsLoading(false);
     }
