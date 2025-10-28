@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -8,8 +7,6 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Send } from "lucide-react";
@@ -86,7 +83,7 @@ export function ShareButton() {
                 </ol>
                 <div className="flex gap-2 mt-2">
                   <Input
-                    placeholder="Paste your Telegram chat ID..."
+                    placeholder="Paste your Telegram Chat ID..."
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
                   />

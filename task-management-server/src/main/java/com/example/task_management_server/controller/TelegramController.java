@@ -25,8 +25,7 @@ public class TelegramController {
     @PostMapping("/register")
     public ResponseEntity<Void> registerTelegramChat(
             @RequestHeader("Authorization") String token,
-            @RequestBody Map<String, String> payload
-    ) {
+            @RequestBody Map<String, String> payload) {
         String chatId = payload.get("chatId");
         String username = jwtService.validateToken(token.substring(7));
 
@@ -59,8 +58,7 @@ public class TelegramController {
                             "🎉 Welcome to Manado Task Management Bot!\n\n"
                                     + "Your Chat ID is: %s\n\n"
                                     + "Copy this ID and paste it in the application to receive task updates.",
-                            chatId
-                    );
+                            chatId);
                     telegramService.sendMessage(chatId, welcomeMessage);
                 }
             }
