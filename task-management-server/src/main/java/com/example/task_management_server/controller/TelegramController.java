@@ -39,32 +39,4 @@ public class TelegramController {
         return ResponseEntity.ok(Map.of("summary", summary));
     }
 
-    @PostMapping("/webhook")
-    public ResponseEntity<Void> handleWebhook(@RequestBody Map<String, Object> update) {
-        // Handle the /start command to get chat ID
-        if (update.containsKey("message")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> message = (Map<String, Object>) update.get("message");
-
-            if (message.containsKey("text")) {
-                String text = (String) message.get("text");
-                if ("/start".equals(text)) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> chat = (Map<String, Object>) message.get("chat");
-                    String chatId = String.valueOf(chat.get("id"));
-
-                    // Send welcome message with the chat ID
-                    String welcomeMessage = String.format(
-                            "🎉 Welcome to Manado Task Management Bot!\n\n"
-                                    + "Your Chat ID is: %s\n\n"
-                                    + "Copy this ID and paste it in the application to receive task updates.",
-                            chatId);
-                    telegramService.sendMessage(chatId, welcomeMessage);
-                }
-            }
-        }
-
-        return ResponseEntity.ok().build();
-    }
-
 }

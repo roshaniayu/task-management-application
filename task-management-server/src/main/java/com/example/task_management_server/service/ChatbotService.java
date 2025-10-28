@@ -83,7 +83,8 @@ public class ChatbotService {
         } else {
             tasks.stream()
                     .filter(task -> task.getStatus() == Task.TaskStatus.TODO
-                            && task.getAssignees().stream().anyMatch(a -> a.getUsername().equals(username)))
+                            && (task.getAssignees().stream().anyMatch(a -> a.getUsername().equals(username))
+                            || task.getOwner().getUsername().equals(username)))
                     .forEach(task -> {
                         summary.append("• ").append(task.getTitle());
                         if (task.getEndDate() != null) {
@@ -101,8 +102,8 @@ public class ChatbotService {
         } else {
             tasks.stream()
                     .filter(task -> task.getStatus() == Task.TaskStatus.IN_PROGRESS
-                            && task.getAssignees().stream().anyMatch(a -> a.getUsername().equals(username))
-                            || task.getOwner().getUsername().equals(username))
+                            && (task.getAssignees().stream().anyMatch(a -> a.getUsername().equals(username))
+                            || task.getOwner().getUsername().equals(username)))
                     .forEach(task -> {
                         summary.append("• ").append(task.getTitle());
                         if (task.getEndDate() != null) {
@@ -120,7 +121,8 @@ public class ChatbotService {
         } else {
             tasks.stream()
                     .filter(task -> task.getStatus() == Task.TaskStatus.DONE
-                            && task.getAssignees().stream().anyMatch(a -> a.getUsername().equals(username)))
+                            && (task.getAssignees().stream().anyMatch(a -> a.getUsername().equals(username))
+                            || task.getOwner().getUsername().equals(username)))
                     .forEach(task -> {
                         summary.append("• ").append(task.getTitle());
                         if (task.getEndDate() != null) {
@@ -136,7 +138,7 @@ public class ChatbotService {
         int urgentCount = 0;
         for (Task task : tasks) {
             Set<Account> assignees = task.getAssignees();
-            if (!assignees.stream().anyMatch(account -> account.getUsername().equals(username))) {
+            if (!(assignees.stream().anyMatch(account -> account.getUsername().equals(username)) || task.getOwner().getUsername().equals(username))) {
                 continue;
             }
 
