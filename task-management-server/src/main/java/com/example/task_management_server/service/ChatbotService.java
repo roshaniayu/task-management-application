@@ -101,7 +101,8 @@ public class ChatbotService {
         } else {
             tasks.stream()
                     .filter(task -> task.getStatus() == Task.TaskStatus.IN_PROGRESS
-                            && task.getAssignees().stream().anyMatch(a -> a.getUsername().equals(username)))
+                            && task.getAssignees().stream().anyMatch(a -> a.getUsername().equals(username))
+                            || task.getOwner().getUsername().equals(username))
                     .forEach(task -> {
                         summary.append("• ").append(task.getTitle());
                         if (task.getEndDate() != null) {

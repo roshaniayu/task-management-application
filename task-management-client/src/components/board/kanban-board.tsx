@@ -5,6 +5,7 @@ import { type Task, TaskCard } from "./task-card";
 import { ShareButton } from "./share-button";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
+import { getAuth } from "@/lib/auth";
 import {
   getTasks,
   createTask,
@@ -139,17 +140,25 @@ export function KanbanBoard() {
 
       const updated = await updateTask(String(taskId), updates);
 
-      console.log("Updated task:", updated);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task.id === taskId
             ? {
               ...updated,
               columnId: statusToColumn[updated.status]
             } as Task
             : task
-        )
-      ); // Filter to hide if user removes themselves from assignees
+        );
+
+        const currentUser = getAuth().username;
+        return currentUser
+          ? updatedTasks.filter(task =>
+            task.id === taskId
+              ? (updated.assignees || []).includes(currentUser)
+              : (task.assignees || []).includes(currentUser) || task.owner === currentUser
+          )
+          : updatedTasks;
+      });
     } catch (error: any) {
       toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
       throw error;
