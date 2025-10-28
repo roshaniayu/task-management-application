@@ -154,7 +154,7 @@ export function KanbanBoard() {
         return currentUser
           ? updatedTasks.filter(task =>
             task.id === taskId
-              ? (updated.assignees || []).includes(currentUser)
+              ? (updated.assignees || []).includes(currentUser) || task.owner === currentUser
               : (task.assignees || []).includes(currentUser) || task.owner === currentUser
           )
           : updatedTasks;
