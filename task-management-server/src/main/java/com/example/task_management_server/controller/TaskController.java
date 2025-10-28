@@ -119,7 +119,7 @@ public class TaskController {
         );
 
         if (savedOpt.isEmpty()) {
-            throw new ForbiddenException("not allowed to update this task");
+            throw new ForbiddenException("Only owner is allowed to update this task");
         }
         Task saved = savedOpt.get();
 
@@ -149,7 +149,7 @@ public class TaskController {
             @PathVariable("id") Long id) {
         boolean ok = taskService.deleteIfOwner(username, id);
         if (!ok) {
-            throw new ForbiddenException("not allowed to delete this task");
+            throw new ForbiddenException("Only owner is allowed to update this task");
         }
         return ResponseEntity.noContent().build();
     }

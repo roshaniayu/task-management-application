@@ -89,55 +89,51 @@ export type UpdateTaskPayload = TaskPayload;
 
 export async function getTasks(): Promise<GetTaskResponse> {
   const auth = getAuth();
-  const headers: Record<string, string> = {};
-  if (auth?.token) {
-    headers["Authorization"] = `Bearer ${auth.token}`;
-  }
+  if (!auth.token) throw new Error("Not authenticated");
 
   return request<GetTaskResponse>("/tasks", {
     method: "GET",
-    headers,
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
   });
 }
 
 export async function createTask(payload: CreateTaskPayload): Promise<TaskResponse> {
   const auth = getAuth();
-  const headers: Record<string, string> = {};
-  if (auth?.token) {
-    headers["Authorization"] = `Bearer ${auth.token}`;
-  }
+  if (!auth.token) throw new Error("Not authenticated");
 
   return request<TaskResponse>("/tasks", {
     method: "POST",
-    headers,
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
     body: JSON.stringify(payload),
   });
 }
 
 export async function updateTask(taskId: string, payload: UpdateTaskPayload): Promise<TaskResponse> {
   const auth = getAuth();
-  const headers: Record<string, string> = {};
-  if (auth?.token) {
-    headers["Authorization"] = `Bearer ${auth.token}`;
-  }
+  if (!auth.token) throw new Error("Not authenticated");
 
   return request<TaskResponse>(`/tasks/${taskId}`, {
     method: "PUT",
-    headers,
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
     body: JSON.stringify(payload),
   });
 }
 
 export async function deleteTask(taskId: string): Promise<void> {
   const auth = getAuth();
-  const headers: Record<string, string> = {};
-  if (auth?.token) {
-    headers["Authorization"] = `Bearer ${auth.token}`;
-  }
+  if (!auth.token) throw new Error("Not authenticated");
 
   await request<void>(`/tasks/${taskId}`, {
     method: "DELETE",
-    headers,
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
   });
 }
 
@@ -147,9 +143,40 @@ export type GetUsernamesResponse = {
 
 export async function getUsernames(): Promise<GetUsernamesResponse> {
   const auth = getAuth();
-  const headers: Record<string, string> = {};
-  if (auth?.token) {
-    headers["Authorization"] = `Bearer ${auth.token}`;
-  }
-  return request<GetUsernamesResponse>("/usernames", { headers });
+  if (!auth.token) throw new Error("Not authenticated");
+
+  return request<GetUsernamesResponse>("/usernames", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
+  });
+}
+
+export type ChatbotResponse = {
+  summary: string;
+};
+
+export async function getBoardSummary(): Promise<ChatbotResponse> {
+  const auth = getAuth();
+  if (!auth.token) throw new Error("Not authenticated");
+
+  return request("/telegram/board-summary", {
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
+  });
+}
+
+export async function registerTelegramChat(chatId: string): Promise<void> {
+  const auth = getAuth();
+  if (!auth.token) throw new Error("Not authenticated");
+
+  return request("/telegram/register", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
+    body: JSON.stringify({ chatId }),
+  });
 }

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { BoardColumn, BoardContainer, type Column } from "./board-column";
 import { type Task, TaskCard } from "./task-card";
+import { ShareButton } from "./share-button";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
 import {
@@ -138,13 +139,17 @@ export function KanbanBoard() {
 
       const updated = await updateTask(String(taskId), updates);
 
+      console.log("Updated task:", updated);
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           task.id === taskId
-            ? { ...updated, columnId: statusToColumn[updated.status] } as Task
+            ? {
+              ...updated,
+              columnId: statusToColumn[updated.status]
+            } as Task
             : task
         )
-      );
+      ); // Filter to hide if user removes themselves from assignees
     } catch (error: any) {
       toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
       throw error;
@@ -366,15 +371,19 @@ export function KanbanBoard() {
         <BoardContainer>
           <SortableContext items={columnsId}>
             {columns.map((col) => (
-              col.id === "todo" ? (
+              col.id === "todo" || col.id === "done" ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex">
-                    <Button
-                      onClick={onClickCreateTask}
-                      className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-600"
-                    >
-                      <Plus className="mr-2" size={16} /> New Task
-                    </Button>
+                    {col.id === "todo" ? (
+                      <Button
+                        onClick={onClickCreateTask}
+                        className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+                      >
+                        <Plus className="mr-2" size={16} /> New Task
+                      </Button>
+                    ) : (
+                      <ShareButton />
+                    )}
                   </div>
                   <BoardColumn
                     key={col.id}

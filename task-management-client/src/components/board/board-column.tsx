@@ -84,7 +84,6 @@ export function BoardColumn({ column, tasks, isOverlay, onDelete, onEdit }: Boar
       <ScrollArea>
         <CardContent className="flex flex-grow flex-col gap-2 p-2">
           <SortableContext items={tasksIds}>
-            {tasks.length === 0 && (<p className="mt-2 text-s text-muted-foreground">Empty</p>)}
             {tasks.map((task) => (
               <TaskCard task={task} key={task.id} onDelete={onDelete} onEdit={onEdit} />
             ))}

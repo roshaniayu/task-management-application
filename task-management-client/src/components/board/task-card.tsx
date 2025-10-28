@@ -172,9 +172,10 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
           <span className="sr-only">Move task</span>
           <GripVertical />
         </Button>
+        <p > </p>
         <div className="ml-auto flex gap-2">
-          {task.assignees && task.assignees.some(assignee => assignee !== task.owner) && task.owner !== getAuth().username && (
-            <Badge variant="secondary" className="text-muted-foreground">
+          {task.assignees && task.owner !== getAuth().username && (
+            <Badge variant="outline" className="text-muted-foreground">
               Assigned
             </Badge>
           )}
@@ -198,10 +199,10 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
             </Badge>
           )}
           {task.assignees && task.assignees.length > 0 && (
-            <Badge variant={"secondary"} className="flex items-center px-2">
-              <User className="w-3 h-3 mr-1" />
-              <span className="font-bold mr-1">{task.assignees.length}</span>
-              <span className="text-muted-foreground">{task.assignees.map(assignee => `@${assignee}`).join(', ')}</span>
+            <Badge variant={"secondary"} className="flex items-center px-2 max-w-[200px]">
+              <User className="w-3 h-3 mr-1 flex-shrink-0" />
+              <span className="font-bold mr-1 flex-shrink-0">{task.assignees.length}</span>
+              <span className="text-muted-foreground truncate">{task.assignees.map(assignee => `@${assignee}`).join(', ')}</span>
             </Badge>
           )}
         </div>
@@ -212,46 +213,48 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
           <div className="text-xs text-muted-foreground">Created on: {formatDate(new Date(task.createdAt))}</div>
         </div>
         <div className="flex gap-1">
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                disabled={isDeleting}
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="sr-only">Delete task</span>
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this task? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogAction
+          {task.assignees && task.owner === getAuth().username && (
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={() => setIsDeleteDialogOpen(true)}
                   disabled={isDeleting}
-                  onClick={async () => {
-                    setIsDeleting(true);
-                    try {
-                      await onDelete?.(task.id);
-                    } finally {
-                      setIsDeleting(false);
-                      setIsDeleteDialogOpen(false);
-                    }
-                  }}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  {isDeleting ? "Deleting..." : "Delete"}
-                </AlertDialogAction>
-                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Delete task</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this task? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogAction
+                    disabled={isDeleting}
+                    onClick={async () => {
+                      setIsDeleting(true);
+                      try {
+                        await onDelete?.(task.id);
+                      } finally {
+                        setIsDeleting(false);
+                        setIsDeleteDialogOpen(false);
+                      }
+                    }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
 
           <AlertDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <AlertDialogTrigger asChild>
