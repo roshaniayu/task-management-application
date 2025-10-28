@@ -7,6 +7,7 @@ import { Button } from "./components/ui/button";
 import { ThemeProvider } from "./components/theme-provider";
 import { getAuth, clearAuth, saveAuth } from "./lib/auth";
 import { Header } from "./components/navbar/header";
+import { Toaster } from "@/components/ui/sonner"
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -37,6 +38,7 @@ function App() {
     <>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <div className="min-h-screen flex flex-col">
+          <Toaster position="top-center" />
           <Header
             isLoggedIn={isLoggedIn}
             username={username}

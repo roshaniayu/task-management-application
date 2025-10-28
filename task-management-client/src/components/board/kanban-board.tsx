@@ -114,7 +114,8 @@ export function KanbanBoard() {
       setNewDescription("");
       setNewEndDate(undefined);
     } catch (error: any) {
-      toast.error("Failed to create task:", error.message);
+      toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
+      throw error;
     } finally {
       setIsSaving(false);
     }
@@ -134,7 +135,7 @@ export function KanbanBoard() {
         )
       );
     } catch (error: any) {
-      toast.error("Failed to update task:", error.message);
+      toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
       throw error;
     }
   };
@@ -144,7 +145,8 @@ export function KanbanBoard() {
       await deleteTask(String(taskId));
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
     } catch (error: any) {
-      toast.error("Failed to delete task:", error.message);
+      toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
+      throw error;
     }
   };
 
@@ -456,15 +458,15 @@ export function KanbanBoard() {
 
     const activeTask = active.data.current?.task as Task;
     const newStatus = columnToStatus[activeTask.columnId as ColumnId];
+
     updateTask(String(activeTask.id), {
       title: activeTask.title,
       description: activeTask.description,
       endDate: activeTask.endDate,
       status: newStatus as "TODO" | "IN_PROGRESS" | "DONE"
-    }).catch((error) => {
-      console.error('Error updating task status:', error);
+    }).catch((error: any) => {
+      toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
     });
-
 
     if (!over) return;
 

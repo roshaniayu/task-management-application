@@ -28,7 +28,6 @@ async function request<T>(path: string, options: RequestInit = {}, base = DEFAUL
 
   if (!res.ok) {
     let err: any = new Error(res.statusText || "Request failed");
-
     try {
       err = await res.json();
     } catch {
