@@ -1,28 +1,18 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-
-import { BoardColumn, BoardContainer } from "./board-column";
-import {
-  DndContext,
-  type DragEndEvent,
-  type DragOverEvent,
-  DragOverlay,
-  type DragStartEvent,
-  useSensor,
-  useSensors,
-  KeyboardSensor,
-  type Announcements,
-  type UniqueIdentifier,
-  TouchSensor,
-  MouseSensor,
-} from "@dnd-kit/core";
-import { SortableContext, arrayMove } from "@dnd-kit/sortable";
+import { BoardColumn, BoardContainer, type Column } from "./board-column";
 import { type Task, TaskCard } from "./task-card";
-import type { Column } from "./board-column";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
-import { fetchTasks, createTask, updateTask, deleteTask } from "@/lib/api";
-import type { TaskResponse, TaskPayload } from "@/lib/api";
+import {
+  getTasks,
+  createTask,
+  updateTask,
+  deleteTask,
+  getUsernames,
+  type GetTaskResponse,
+  type TaskPayload
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton"
@@ -36,8 +26,24 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
+import {
+  DndContext,
+  DragOverlay,
+  useSensor,
+  useSensors,
+  KeyboardSensor,
+  TouchSensor,
+  MouseSensor,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type Announcements,
+  type UniqueIdentifier,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
-import { toast } from "sonner"
+import { toast } from "sonner";
 
 export const columnToStatus: Record<ColumnId, "TODO" | "IN_PROGRESS" | "DONE"> = {
   "todo": "TODO",
@@ -77,6 +83,9 @@ export function KanbanBoard() {
   const [error, setError] = useState<string | null>(null);
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [users, setUsers] = useState<string[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
 
   // Add task modal state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -93,7 +102,8 @@ export function KanbanBoard() {
         title: newTitle.trim(),
         description: newDescription ? newDescription.trim() : null,
         endDate: newEndDate ? new Date(newEndDate).toISOString() : null,
-        status: "TODO"
+        status: "TODO",
+        assignees: selectedAssignees.length > 0 ? selectedAssignees : undefined
       } as const;
 
       const created = await createTask(payload as any);
@@ -113,6 +123,7 @@ export function KanbanBoard() {
       setNewTitle("");
       setNewDescription("");
       setNewEndDate(undefined);
+      setSelectedAssignees([]);
     } catch (error: any) {
       toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
       throw error;
@@ -150,22 +161,39 @@ export function KanbanBoard() {
     }
   };
 
+  const onClickCreateTask = async () => {
+    setIsCreateOpen(true);
+    setSelectedAssignees([]);
+    setIsLoadingUsers(true);
+
+    try {
+      const result = await getUsernames();
+      setUsers(result.usernames || []);
+    } catch (error: any) {
+      toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
+      setUsers([]);
+      throw error;
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
   useEffect(() => {
     async function loadTasks() {
       setIsLoading(true);
       setError(null);
 
       try {
-        const serverTasks: TaskResponse[] = await fetchTasks();
+        const result: GetTaskResponse = await getTasks();
 
-        const mapped: Task[] = serverTasks.map((t) => {
-
+        const mapped: Task[] = result.tasks.map((t) => {
           const columnId = (statusToColumn[t.status] ?? "todo") as ColumnId;
           const title = t.title;
           const description = t.description ?? null;
           const endDate = t.endDate ?? null;
           const owner = t.owner;
           const createdAt = t.createdAt;
+          const assignees = t.assignees;
 
           return {
             id: String(t.id),
@@ -174,7 +202,8 @@ export function KanbanBoard() {
             description,
             endDate,
             owner,
-            createdAt
+            createdAt,
+            assignees
           } satisfies Task;
         });
 
@@ -341,7 +370,7 @@ export function KanbanBoard() {
                 <div className="flex flex-col gap-2">
                   <div className="flex">
                     <Button
-                      onClick={() => setIsCreateOpen(true)}
+                      onClick={onClickCreateTask}
                       className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-600"
                     >
                       <Plus className="mr-2" size={16} /> New Task
@@ -367,7 +396,8 @@ export function KanbanBoard() {
             ))}
           </SortableContext>
         </BoardContainer>
-      ))}
+      ))
+      }
 
       <AlertDialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <AlertDialogContent>
@@ -405,6 +435,15 @@ export function KanbanBoard() {
                 onChange={(e) => setNewEndDate(e.target.value || undefined)}
               />
             </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Assignee(s)</label>
+              <MultiSelectCombobox
+                options={users}
+                selected={selectedAssignees}
+                onChange={setSelectedAssignees}
+                placeholder={isLoadingUsers ? "Loading users..." : "Select assignees..."}
+              />
+            </div>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
@@ -418,21 +457,23 @@ export function KanbanBoard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {"document" in window && createPortal(
-        <DragOverlay>
-          {activeColumn && (
-            <BoardColumn
-              isOverlay
-              column={activeColumn}
-              tasks={tasks.filter(
-                (task) => task.columnId === activeColumn.id
-              )}
-            />
-          )}
-          {activeTask && <TaskCard task={activeTask} isOverlay />}
-        </DragOverlay>,
-        document.body
-      )}
+      {
+        "document" in window && createPortal(
+          <DragOverlay>
+            {activeColumn && (
+              <BoardColumn
+                isOverlay
+                column={activeColumn}
+                tasks={tasks.filter(
+                  (task) => task.columnId === activeColumn.id
+                )}
+              />
+            )}
+            {activeTask && <TaskCard task={activeTask} isOverlay />}
+          </DragOverlay>,
+          document.body
+        )
+      }
     </DndContext >
   );
 
@@ -509,7 +550,7 @@ export function KanbanBoard() {
 
     if (!isActiveATask) return;
 
-    // Im dropping a Task over another Task
+    // Dropping a task over another task
     if (isActiveATask && isOverATask) {
       setTasks((tasks) => {
         const activeIndex = tasks.findIndex((t) => t.id === activeId);
@@ -531,7 +572,7 @@ export function KanbanBoard() {
 
     const isOverAColumn = overData?.type === "Column";
 
-    // Im dropping a Task over a column
+    // Dropping a task over a column
     if (isActiveATask && isOverAColumn) {
       setTasks((tasks) => {
         const activeIndex = tasks.findIndex((t) => t.id === activeId);

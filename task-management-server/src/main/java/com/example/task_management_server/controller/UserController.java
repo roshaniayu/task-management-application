@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/accounts")
+@RequestMapping("/usernames")
 public class UserController {
 
     private final AccountService accountService;
@@ -24,9 +24,9 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<?> listAccounts() {
+    public ResponseEntity<?> getUsernames() {
         List<Account> accounts = accountService.findAll();
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("accounts", accounts.stream().map(Account::getUsername)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("usernames", accounts.stream().map(Account::getUsername)));
     }
 
 }

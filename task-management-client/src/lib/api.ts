@@ -1,18 +1,4 @@
-export type RegisterPayload = {
-  username: string;
-  email: string;
-  password: string;
-};
-
-export type SignInPayload = {
-  username: string;
-  password: string;
-};
-
-export type AuthResponse = {
-  token: string;
-  username: string;
-};
+import { getAuth } from "./auth";
 
 const DEFAULT_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
@@ -45,7 +31,21 @@ async function request<T>(path: string, options: RequestInit = {}, base = DEFAUL
   return (await res.text()) as unknown as T;
 }
 
-import { getAuth } from "./auth";
+export type RegisterPayload = {
+  username: string;
+  email: string;
+  password: string;
+};
+
+export type SignInPayload = {
+  username: string;
+  password: string;
+};
+
+export type AuthResponse = {
+  token: string;
+  username: string;
+};
 
 export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
   return request<AuthResponse>("/auth/register", {
@@ -70,6 +70,10 @@ export type TaskResponse = {
   status: "TODO" | "IN_PROGRESS" | "DONE";
   owner: string;
   assignees: string[];
+}
+
+export type GetTaskResponse = {
+  tasks: TaskResponse[];
 };
 
 export type TaskPayload = {
@@ -77,23 +81,20 @@ export type TaskPayload = {
   description?: string | null;
   endDate?: string | null;
   status?: "TODO" | "IN_PROGRESS" | "DONE";
+  assignees?: string[];
 };
 
 export type CreateTaskPayload = TaskPayload;
 export type UpdateTaskPayload = TaskPayload;
 
-/**
- * Fetch tasks for the authenticated user. Automatically adds Authorization header
- * when a token is present in local storage.
- */
-export async function fetchTasks(): Promise<TaskResponse[]> {
+export async function getTasks(): Promise<GetTaskResponse> {
   const auth = getAuth();
   const headers: Record<string, string> = {};
   if (auth?.token) {
     headers["Authorization"] = `Bearer ${auth.token}`;
   }
 
-  return request<TaskResponse[]>("/tasks", {
+  return request<GetTaskResponse>("/tasks", {
     method: "GET",
     headers,
   });
@@ -140,7 +141,15 @@ export async function deleteTask(taskId: string): Promise<void> {
   });
 }
 
-export default {
-  registerUser,
-  signInUser,
+export type GetUsernamesResponse = {
+  usernames: string[];
 };
+
+export async function getUsernames(): Promise<GetUsernamesResponse> {
+  const auth = getAuth();
+  const headers: Record<string, string> = {};
+  if (auth?.token) {
+    headers["Authorization"] = `Bearer ${auth.token}`;
+  }
+  return request<GetUsernamesResponse>("/usernames", { headers });
+}

@@ -35,6 +35,14 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
     setFieldErrors({});
     setIsLoading(true);
 
+    const newErrors: { username?: string; email?: string; password?: string; confirmPassword?: string } = {};
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+      setFieldErrors(newErrors);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await registerUser({
         username: formData.username,
@@ -47,7 +55,6 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
       if (error.status === 400) {
         const errorFields = error.errorFields || {};
 
-        const newErrors: { username?: string; email?: string; password?: string; confirmPassword?: string } = {};
         if (errorFields.username) {
           newErrors.username = errorFields.username;
         }
@@ -56,9 +63,6 @@ export function RegisterForm({ onSwitch, onAuthSuccess }: RegisterFormProps) {
         }
         if (errorFields.password) {
           newErrors.password = errorFields.password;
-        }
-        if (formData.password !== formData.confirmPassword) {
-          newErrors.confirmPassword = "Passwords do not match";
         }
 
         setFieldErrors(newErrors);

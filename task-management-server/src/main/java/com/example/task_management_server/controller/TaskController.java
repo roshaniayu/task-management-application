@@ -30,6 +30,38 @@ public class TaskController {
         this.taskService = taskService;
     }
 
+    @GetMapping
+    public ResponseEntity<?> getTasks(@RequestAttribute("username") String username) {
+        Set<Task> tasks;
+        try {
+            tasks = taskService.getTasksByUser(username);
+        } catch (IllegalArgumentException e) {
+            throw new ResourceNotFoundException(e.getMessage());
+        }
+
+        return ResponseEntity.ok(Map.of("tasks", tasks.stream()
+                .map(task -> {
+                    Optional<String> description = Optional.ofNullable(task.getDescription());
+                    Optional<String> endDate = Optional.ofNullable(task.getEndDate()).map(Instant::toString);
+                    Optional<String> createdAt = Optional.ofNullable(task.getCreatedAt()).map(Instant::toString);
+                    List<String> assignees = Optional.ofNullable(task.getAssignees())
+                            .map(t -> t.stream().map(Account::getUsername).toList())
+                            .orElse(List.of());
+
+                    return Map.of(
+                            "id", task.getId(),
+                            "title", task.getTitle(),
+                            "description", description,
+                            "endDate", endDate,
+                            "createdAt", createdAt,
+                            "status", task.getStatus().name(),
+                            "owner", task.getOwner().getUsername(),
+                            "assignees", assignees
+                    );
+                }).toList()
+        ));
+    }
+
     @PostMapping
     @Transactional
     public ResponseEntity<?> createTask(
@@ -38,7 +70,14 @@ public class TaskController {
 
         Task saved;
         try {
-            saved = taskService.createTask(username, req.title(), req.description(), req.endDate(), req.status());
+            saved = taskService.createTask(
+                    username,
+                    req.title(),
+                    req.description(),
+                    req.endDate(),
+                    req.status(),
+                    req.assignees()
+            );
         } catch (IllegalArgumentException e) {
             throw new ResourceNotFoundException(e.getMessage());
         }
@@ -46,6 +85,9 @@ public class TaskController {
         Optional<String> description = Optional.ofNullable(saved.getDescription());
         Optional<String> endDate = Optional.ofNullable(saved.getEndDate()).map(Instant::toString);
         Optional<String> createdAt = Optional.ofNullable(saved.getCreatedAt()).map(Instant::toString);
+        List<String> assignees = Optional.ofNullable(saved.getAssignees())
+                .map(t -> t.stream().map(Account::getUsername).toList())
+                .orElse(List.of());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "id", saved.getId(),
@@ -54,38 +96,9 @@ public class TaskController {
                 "endDate", endDate,
                 "createdAt", createdAt,
                 "owner", saved.getOwner().getUsername(),
-                "status", saved.getStatus().name()));
-    }
-
-    @GetMapping
-    public ResponseEntity<?> listTasks(@RequestAttribute("username") String username) {
-        Set<Task> tasks;
-        try {
-            tasks = taskService.listTasksForUser(username);
-        } catch (IllegalArgumentException e) {
-            throw new ResourceNotFoundException(e.getMessage());
-        }
-
-        return ResponseEntity.ok(
-                tasks.stream()
-                        .map(task -> {
-                            Optional<String> description = Optional.ofNullable(task.getDescription());
-                            Optional<String> endDate = Optional.ofNullable(task.getEndDate()).map(Instant::toString);
-                            Optional<String> createdAt = Optional.ofNullable(task.getCreatedAt()).map(Instant::toString);
-                            List<String> assignees = Optional.ofNullable(task.getAssignees())
-                                    .map(t -> t.stream().map(Account::getUsername).toList())
-                                    .orElse(List.of());
-
-                            return Map.of(
-                                    "id", task.getId(),
-                                    "title", task.getTitle(),
-                                    "description", description,
-                                    "endDate", endDate,
-                                    "createdAt", createdAt,
-                                    "status", task.getStatus().name(),
-                                    "owner", task.getOwner().getUsername(),
-                                    "assignees", assignees);
-                        }).toList());
+                "status", saved.getStatus().name(),
+                "assignees", assignees
+        ));
     }
 
     @PutMapping("/{id}")
@@ -101,7 +114,9 @@ public class TaskController {
                 req.title(),
                 req.description(),
                 req.endDate(),
-                req.status());
+                req.status(),
+                req.assignees()
+        );
 
         if (savedOpt.isEmpty()) {
             throw new ForbiddenException("not allowed to update this task");
@@ -111,6 +126,10 @@ public class TaskController {
         Optional<String> description = Optional.ofNullable(saved.getDescription());
         Optional<String> createdAt = Optional.ofNullable(saved.getCreatedAt()).map(Instant::toString);
         Optional<String> endDate = Optional.ofNullable(saved.getEndDate()).map(Instant::toString);
+        List<String> assignees = Optional.ofNullable(saved.getAssignees())
+                .map(t -> t.stream().map(Account::getUsername).toList())
+                .orElse(List.of());
+
         return ResponseEntity.ok(Map.of(
                 "id", saved.getId(),
                 "createdAt", createdAt,
@@ -118,7 +137,9 @@ public class TaskController {
                 "description", description,
                 "endDate", endDate,
                 "owner", saved.getOwner().getUsername(),
-                "status", saved.getStatus().name()));
+                "status", saved.getStatus().name(),
+                "assignees", assignees)
+        );
     }
 
     @DeleteMapping("/{id}")
@@ -133,64 +154,20 @@ public class TaskController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/assign")
-    @Transactional
-    public ResponseEntity<?> assignTaskToUser(
-            @RequestAttribute("username") String username,
-            @PathVariable("id") Long id,
-            @RequestBody AssignUnassignTaskRequest req) {
-
-        Optional<Task> savedOpt = taskService.assignTask(username, id, req.username());
-        if (savedOpt.isEmpty()) {
-            throw new ForbiddenException("not allowed to assign this task");
-        }
-        Task saved = savedOpt.get();
-
-        List<String> assignees = Optional.ofNullable(saved.getAssignees())
-                .map(t -> t.stream().map(Account::getUsername).toList())
-                .orElse(List.of());
-        return ResponseEntity.ok(Map.of(
-                "id", saved.getId(),
-                "assignees", assignees));
-    }
-
-    @PostMapping("/{id}/unassign")
-    @Transactional
-    public ResponseEntity<?> unassignTaskFromUser(
-            @RequestAttribute("username") String username,
-            @PathVariable("id") Long id,
-            @RequestBody AssignUnassignTaskRequest req) {
-
-        Optional<Task> savedOpt = taskService.unassignTask(username, id, req.username());
-        if (savedOpt.isEmpty()) {
-            throw new ForbiddenException("not allowed to unassign this task");
-        }
-        Task saved = savedOpt.get();
-
-        List<String> assignees = Optional.ofNullable(saved.getAssignees())
-                .map(t -> t.stream().map(Account::getUsername).toList())
-                .orElse(List.of());
-        return ResponseEntity.ok(Map.of(
-                "id", saved.getId(),
-                "assignees", assignees));
-    }
-
     public static record CreateTaskRequest(
             @NotEmpty(message = "Title cannot be empty") String title,
             String description,
             String endDate,
-            String status) {
+            String status,
+            List<String> assignees) {
     }
 
     public static record UpdateTaskRequest(
             String title,
             String description,
             String endDate,
-            String status) {
-    }
-
-    public static record AssignUnassignTaskRequest(List<String> username) {
-
+            String status,
+            List<String> assignees) {
     }
 
 }

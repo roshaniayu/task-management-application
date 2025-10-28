@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class TaskService {
@@ -24,13 +25,24 @@ public class TaskService {
         this.userRepo = userRepo;
     }
 
+    public Set<Task> getTasksByUser(String username) {
+        Account account = userRepo
+                .findById(username)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
+        Set<Task> tasks = new HashSet<>();
+        tasks.addAll(taskRepo.findByOwner(account));
+        tasks.addAll(taskRepo.findByAssignees(account));
+        return tasks;
+    }
+
     public Task createTask(
             String username,
             String title,
             String description,
             String endDateStr,
-            String statusStr) {
-
+            String statusStr,
+            List<String> assigneeUsernames) {
         Account owner = userRepo.findById(username).orElseThrow(() -> new IllegalArgumentException("user not found"));
 
         Task.TaskStatus status = Optional
@@ -42,6 +54,13 @@ public class TaskService {
                 .map(OffsetDateTime::parse)
                 .map(OffsetDateTime::toInstant)
                 .orElse(null);
+        Set<Account> assignees = Optional
+                .ofNullable(assigneeUsernames)
+                .map(usernames -> userRepo
+                        .findAllById(usernames)
+                        .stream()
+                        .collect(Collectors.toSet()))
+                .orElse(Set.of());
 
         Task task = Task.builder()
                 .title(title)
@@ -49,20 +68,10 @@ public class TaskService {
                 .endDate(endDate)
                 .status(status)
                 .owner(owner)
+                .assignees(assignees)
                 .build();
 
         return taskRepo.save(task);
-    }
-
-    public Set<Task> listTasksForUser(String username) {
-        Account account = userRepo
-                .findById(username)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
-
-        Set<Task> tasks = new HashSet<>();
-        tasks.addAll(taskRepo.findByOwner(account));
-        tasks.addAll(taskRepo.findByAssignees(account));
-        return tasks;
     }
 
     public Optional<Task> updateTaskIfOwner(
@@ -71,7 +80,8 @@ public class TaskService {
             String title,
             String description,
             String endDateStr,
-            String statusStr) {
+            String statusStr,
+            List<String> assigneeUsernames) {
 
         Optional<Task> taskOpt = taskRepo.findById(id);
         if (taskOpt.isEmpty()) {
@@ -79,7 +89,11 @@ public class TaskService {
         }
 
         Task task = taskOpt.get();
-        if (!task.getOwner().getUsername().equals(username)) {
+        Boolean isOwner = task.getOwner().getUsername().equals(username);
+        Boolean isAssignee = task.getAssignees()
+                .stream()
+                .anyMatch(assignee -> assignee.getUsername().equals(username));
+        if (!isOwner && !isAssignee) {
             return Optional.empty();
         }
 
@@ -95,12 +109,20 @@ public class TaskService {
                 .map(OffsetDateTime::parse)
                 .map(OffsetDateTime::toInstant)
                 .orElse(null);
+        Set<Account> assignees = Optional
+                .ofNullable(assigneeUsernames)
+                .map(usernames -> userRepo
+                        .findAllById(usernames)
+                        .stream()
+                        .collect(Collectors.toSet()))
+                .orElse(Set.of());
 
         Task updated = task.toBuilder()
                 .title(newTitle)
                 .description(description)
                 .endDate(newEndDate)
                 .status(newStatus)
+                .assignees(assignees)
                 .build();
 
         return Optional.of(taskRepo.save(updated));
@@ -119,46 +141,6 @@ public class TaskService {
 
         taskRepo.delete(task);
         return true;
-    }
-
-    public Optional<Task> assignTask(String username, Long id, List<String> targetUsernames) {
-        Optional<Task> taskOpt = taskRepo.findById(id);
-        if (taskOpt.isEmpty()) {
-            return Optional.empty();
-        }
-
-        Task task = taskOpt.get();
-        if (!task.getOwner().getUsername().equals(username)) {
-            return Optional.empty();
-        }
-
-        List<Account> targets = userRepo.findAllById(targetUsernames);
-        if (targets.isEmpty()) {
-            return Optional.empty();
-        }
-
-        task.getAssignees().addAll(targets);
-        return Optional.of(taskRepo.save(task));
-    }
-
-    public Optional<Task> unassignTask(String username, Long id, List<String> targetUsernames) {
-        Optional<Task> taskOpt = taskRepo.findById(id);
-        if (taskOpt.isEmpty()) {
-            return Optional.empty();
-        }
-
-        Task task = taskOpt.get();
-        if (!task.getOwner().getUsername().equals(username)) {
-            return Optional.empty();
-        }
-
-        List<Account> targets = userRepo.findAllById(targetUsernames);
-        if (targets.isEmpty()) {
-            return Optional.empty();
-        }
-
-        task.getAssignees().removeAll(targets);
-        return Optional.of(taskRepo.save(task));
     }
 
 }

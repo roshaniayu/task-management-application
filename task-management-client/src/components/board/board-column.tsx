@@ -1,15 +1,15 @@
+import type { UpdateTaskPayload } from "@/lib/api";
 import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { useDndContext, type UniqueIdentifier } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo } from "react";
 import {
+  TaskCard,
   type Task,
-  TaskCard
 } from "./task-card";
 import { cva } from "class-variance-authority";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { ScrollArea, ScrollBar } from "../ui/scroll-area";
-import type { UpdateTaskPayload } from "@/lib/api";
 
 export interface Column {
   id: UniqueIdentifier;

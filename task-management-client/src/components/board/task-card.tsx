@@ -1,14 +1,11 @@
-import type { UniqueIdentifier } from "@dnd-kit/core";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { cva } from "class-variance-authority";
-import { GripVertical, Calendar, Trash2, Pencil } from "lucide-react";
-import { Badge } from "../ui/badge";
+import { useState, useEffect } from "react";
 import { type ColumnId, columnToStatus } from "./kanban-board";
-import { useState } from "react";
+import { getUsernames, type UpdateTaskPayload } from "@/lib/api";
+import { getAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -27,7 +24,13 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "../ui/alert-dialog";
-import type { UpdateTaskPayload } from "@/lib/api";
+import { Badge } from "../ui/badge";
+import type { UniqueIdentifier } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { cva } from "class-variance-authority";
+import { GripVertical, Calendar, Trash2, Pencil, User } from "lucide-react";
+import { toast } from "sonner";
 
 export interface Task {
   id: UniqueIdentifier;
@@ -37,6 +40,7 @@ export interface Task {
   endDate: string | null;
   owner: string;
   createdAt: string;
+  assignees: string[];
 }
 
 export interface TaskCardProps {
@@ -68,6 +72,28 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
   const [editDescription, setEditDescription] = useState(task.description || "");
   const [editEndDate, setEditEndDate] = useState(task.endDate?.split('T')[0] || "");
   const [editStatus, setEditStatus] = useState<"TODO" | "IN_PROGRESS" | "DONE">(columnToStatus[task.columnId]);
+  const [editAssignees, setEditAssignees] = useState<string[]>(task.assignees || []);
+  const [users, setUsers] = useState<string[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    async function loadUsers() {
+      if (!isEditDialogOpen) return;
+      setIsLoadingUsers(true);
+
+      try {
+        const result = await getUsernames();
+        setUsers(result.usernames || []);
+      } catch (error: any) {
+        toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
+        throw error;
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    }
+    loadUsers();
+  }, [isEditDialogOpen]);
+
   const {
     setNodeRef,
     attributes,
@@ -105,7 +131,7 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
     d.getMonth() + 1
   )}/${d.getFullYear()}`;
 
-  // compute end date badge status (red if past, yellow if within 3 days, green otherwise)
+  // Compute end date badge status (red if past, yellow if within 3 days, green otherwise)
   const endDateObj = task.endDate ? new Date(task.endDate) : null;
   const now = new Date();
   let endBadgeClass = "";
@@ -114,15 +140,15 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
     const diffMs = endDateObj.getTime() - now.getTime();
     const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
     if (diffMs < 0) {
-      // past -> red
+      // Past -> red
       endBadgeClass = "bg-red-600 text-white border-transparent dark:bg-red-600";
       endBadgeLabel = formatDate(endDateObj);
     } else if (diffMs <= threeDaysMs) {
-      // within 3 days -> yellow
+      // Within 3 days -> yellow
       endBadgeClass = "bg-yellow-400 text-black border-transparent dark:bg-yellow-500";
       endBadgeLabel = formatDate(endDateObj);
     } else {
-      // future (more than 3 days) -> green
+      // Future (more than 3 days) -> green
       endBadgeClass = "bg-green-600 text-white border-transparent dark:bg-green-600";
       endBadgeLabel = formatDate(endDateObj);
     }
@@ -146,9 +172,16 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
           <span className="sr-only">Move task</span>
           <GripVertical />
         </Button>
-        <Badge variant={"secondary"} className="ml-auto text-muted-foreground">
-          TSK-{task.id}
-        </Badge>
+        <div className="ml-auto flex gap-2">
+          {task.assignees && task.assignees.some(assignee => assignee !== task.owner) && task.owner !== getAuth().username && (
+            <Badge variant="secondary" className="text-muted-foreground">
+              Assigned
+            </Badge>
+          )}
+          <Badge variant={"secondary"} className="text-muted-foreground">
+            TSK-{task.id}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent className="px-3 pt-3 pb-4 text-left flex flex-col gap-2">
         <div className="font-medium whitespace-pre-wrap">{task.title}</div>
@@ -157,14 +190,21 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
             {task.description}
           </div>
         )}
-        {endDateObj && (
-          <div className="mt-1 flex justify-end">
+        <div className="mt-1 flex items-center gap-1">
+          {endDateObj && (
             <Badge variant={"outline"} className={"flex items-center px-2 " + endBadgeClass}>
-              <Calendar className="w-3 h-3 mr-2" />
+              <Calendar className="w-3 h-3 mr-1" />
               {endBadgeLabel}
             </Badge>
-          </div>
-        )}
+          )}
+          {task.assignees && task.assignees.length > 0 && (
+            <Badge variant={"secondary"} className="flex items-center px-2">
+              <User className="w-3 h-3 mr-1" />
+              <span className="font-bold mr-1">{task.assignees.length}</span>
+              <span className="text-muted-foreground">{task.assignees.map(assignee => `@${assignee}`).join(', ')}</span>
+            </Badge>
+          )}
+        </div>
       </CardContent>
       <CardFooter className="px-3 py-2 flex justify-between items-center">
         <div className="flex flex-col gap-1 items-start">
@@ -278,6 +318,15 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Assignee(s)</label>
+                  <MultiSelectCombobox
+                    options={users}
+                    selected={editAssignees}
+                    onChange={setEditAssignees}
+                    placeholder={isLoadingUsers ? "Loading users..." : "Select assignees..."}
+                  />
+                </div>
               </div>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={isEditing}>Cancel</AlertDialogCancel>
@@ -292,7 +341,8 @@ export function TaskCard({ task, isOverlay, onDelete, onEdit }: TaskCardProps) {
                         title: trimmedTitle,
                         description: editDescription.trim() || null,
                         endDate: editEndDate || null,
-                        status: editStatus
+                        status: editStatus,
+                        assignees: editAssignees
                       });
                       setIsEditDialogOpen(false);
                     } finally {

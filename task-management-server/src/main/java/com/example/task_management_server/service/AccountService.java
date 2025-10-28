@@ -27,17 +27,17 @@ public class AccountService {
      */
     public Account register(String username, String email, String rawPassword) {
         if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("username is required");
+            throw new IllegalArgumentException("Username cannot be empty");
         }
         if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("email is required");
+            throw new IllegalArgumentException("Email cannot be empty");
         }
         if (rawPassword == null || rawPassword.isBlank()) {
-            throw new IllegalArgumentException("password is required");
+            throw new IllegalArgumentException("Password cannot be empty");
         }
 
         if (accountRepository.existsById(username)) {
-            throw new IllegalArgumentException("user already exists");
+            throw new IllegalArgumentException("Username already exists");
         }
 
         String hashed = passwordHasher.encode(rawPassword);
