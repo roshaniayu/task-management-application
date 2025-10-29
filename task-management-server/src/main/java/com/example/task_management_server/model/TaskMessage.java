@@ -11,33 +11,34 @@ public record TaskMessage(
 
     public String getChangeDescription() {
         return switch (type) {
-            case CREATED -> String.format("New task created: %s", newTask.title());
+            case CREATED -> String.format("📢 New task created: %s", newTask.title());
             case UPDATED -> {
                 List<String> changes = new ArrayList<>();
                 if (!oldTask.title().equals(newTask.title())) {
-                    changes.add("title");
+                    changes.add("Title");
                 }
                 if (!oldTask.status().equals(newTask.status())) {
-                    changes.add("status");
-                }
-                if (!oldTask.owner().equals(newTask.owner())) {
-                    changes.add("owner");
+                    changes.add("Status");
                 }
                 if (!Objects.equals(oldTask.description(), newTask.description())) {
-                    changes.add("description");
+                    changes.add("Description");
+                }
+                if (!Objects.equals(oldTask.assignees(), newTask.assignees())) {
+                    changes.add("Assignees");
                 }
                 if (!Objects.equals(oldTask.endDate(), newTask.endDate())) {
-                    changes.add("endDate");
+                    changes.add("End date");
                 }
 
                 if (changes.isEmpty()) {
-                    yield "Task updated with no field changes";
+                    yield "📝 Task updated with no field changes";
                 }
-                yield String.format("Task '%s' updated: %s changed",
+
+                yield String.format("📝 Task '%s' updated: %s changed",
                         newTask.title(),
                         String.join(", ", changes));
             }
-            case DELETED -> String.format("Task deleted: %s", oldTask.title());
+            case DELETED -> String.format("🗑️ Task deleted: %s", oldTask.title());
         };
     }
 

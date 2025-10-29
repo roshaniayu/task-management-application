@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// Inner record to represent task state
 public record TaskRecord(
         Long taskId,
         String title,
@@ -13,6 +12,7 @@ public record TaskRecord(
         String owner,
         String description,
         String endDate,
+        Set<Account> assignees,
         Set<String> telegramIds
 ) implements Serializable {
     public static TaskRecord build(Task task) {
@@ -23,6 +23,7 @@ public record TaskRecord(
                 task.getOwner().getUsername(),
                 task.getDescription(),
                 task.getEndDate() != null ? task.getEndDate().toString() : null,
+                task.getAssignees(),
                 getTelegramIds(task.getOwner(), task.getAssignees())
         );
     }

@@ -1,7 +1,6 @@
 package com.example.task_management_server.service;
 
 import com.example.task_management_server.config.MQConfig;
-import com.example.task_management_server.model.Task;
 import com.example.task_management_server.model.TaskMessage;
 import com.example.task_management_server.model.TaskRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +17,8 @@ public class MessageService {
         this.jmsTemplate = jmsTemplate;
     }
 
-    public void sendTaskUpdate(Task task, Task savedTask, TaskMessage.MessageType type) {
+    public void sendTaskUpdate(TaskRecord oldTaskRecord, TaskRecord newTaskRecord, TaskMessage.MessageType type) {
         try {
-            TaskRecord oldTaskRecord = TaskRecord.build(task);
-            TaskRecord newTaskRecord = TaskRecord.build(savedTask);
-
             TaskMessage message = new TaskMessage(
                     oldTaskRecord,
                     newTaskRecord,
@@ -34,5 +30,4 @@ public class MessageService {
             e.printStackTrace();
         }
     }
-
 }

@@ -3,6 +3,7 @@ package com.example.task_management_server.service;
 import com.example.task_management_server.model.Account;
 import com.example.task_management_server.model.Task;
 import com.example.task_management_server.model.TaskMessage;
+import com.example.task_management_server.model.TaskRecord;
 import com.example.task_management_server.repository.AccountRepository;
 import com.example.task_management_server.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -92,12 +93,12 @@ public class TaskService {
         }
 
         Task task = taskOpt.get();
+        TaskRecord taskRecord = TaskRecord.build(task);
 
         Boolean isOwner = task.getOwner().getUsername().equals(username);
         Boolean isAssignee = task.getAssignees()
                 .stream()
                 .anyMatch(assignee -> assignee.getUsername().equals(username));
-
         if (!isOwner && !isAssignee) {
             return Optional.empty();
         }
@@ -129,9 +130,11 @@ public class TaskService {
                 .status(newStatus)
                 .assignees(assignees)
                 .build();
-        Task savedTask = taskRepo.save(updated);
 
-        messageService.sendTaskUpdate(task, savedTask, TaskMessage.MessageType.UPDATED);
+        Task savedTask = taskRepo.save(updated);
+        TaskRecord savedTaskRecord = TaskRecord.build(savedTask);
+
+        messageService.sendTaskUpdate(taskRecord, savedTaskRecord, TaskMessage.MessageType.UPDATED);
 
         return Optional.of(savedTask);
     }
