@@ -12,7 +12,7 @@ public record TaskRecord(
         String owner,
         String description,
         String endDate,
-        Set<Account> assignees,
+        Set<String> assignees,
         Set<String> telegramIds
 ) implements Serializable {
     public static TaskRecord build(Task task) {
@@ -23,9 +23,15 @@ public record TaskRecord(
                 task.getOwner().getUsername(),
                 task.getDescription(),
                 task.getEndDate() != null ? task.getEndDate().toString() : null,
-                task.getAssignees(),
+                getUsernames(task.getAssignees()),
                 getTelegramIds(task.getOwner(), task.getAssignees())
         );
+    }
+
+    private static Set<String> getUsernames(Set<Account> assignees) {
+        Set<String> ids = new HashSet<>();
+        ids.addAll(assignees.stream().map(Account::getUsername).collect(Collectors.toSet()));
+        return ids;
     }
 
     private static Set<String> getTelegramIds(Account owner, Set<Account> assignees) {

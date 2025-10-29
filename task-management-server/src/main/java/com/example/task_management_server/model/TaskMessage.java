@@ -4,29 +4,29 @@ import java.io.Serializable;
 import java.util.*;
 
 public record TaskMessage(
-        TaskRecord oldTask,
-        TaskRecord newTask,
+        TaskRecord oldTaskRecord,
+        TaskRecord newTaskRecord,
         MessageType type
 ) implements Serializable {
 
     public String getChangeDescription() {
         return switch (type) {
-            case CREATED -> String.format("📢 New task created: %s", newTask.title());
+            case CREATED -> String.format("📢 New task created: %s", newTaskRecord.title());
             case UPDATED -> {
                 List<String> changes = new ArrayList<>();
-                if (!oldTask.title().equals(newTask.title())) {
+                if (!oldTaskRecord.title().equals(newTaskRecord.title())) {
                     changes.add("Title");
                 }
-                if (!oldTask.status().equals(newTask.status())) {
+                if (!oldTaskRecord.status().equals(newTaskRecord.status())) {
                     changes.add("Status");
                 }
-                if (!Objects.equals(oldTask.description(), newTask.description())) {
+                if (!Objects.equals(oldTaskRecord.description(), newTaskRecord.description())) {
                     changes.add("Description");
                 }
-                if (!Objects.equals(oldTask.assignees(), newTask.assignees())) {
+                if (!Objects.equals(oldTaskRecord.assignees(), newTaskRecord.assignees())) {
                     changes.add("Assignees");
                 }
-                if (!Objects.equals(oldTask.endDate(), newTask.endDate())) {
+                if (!Objects.equals(oldTaskRecord.endDate(), newTaskRecord.endDate())) {
                     changes.add("End date");
                 }
 
@@ -35,10 +35,10 @@ public record TaskMessage(
                 }
 
                 yield String.format("📝 Task '%s' updated: %s changed",
-                        newTask.title(),
+                        newTaskRecord.title(),
                         String.join(", ", changes));
             }
-            case DELETED -> String.format("🗑️ Task deleted: %s", oldTask.title());
+            case DELETED -> String.format("🗑️ Task deleted: %s", oldTaskRecord.title());
         };
     }
 
@@ -47,24 +47,24 @@ public record TaskMessage(
             return false;
         }
 
-        return !oldTask.status().equals(newTask.status())
-                || !oldTask.title().equals(newTask.title())
-                || !Objects.equals(oldTask.description(), newTask.description())
-                || !Objects.equals(oldTask.endDate(), newTask.endDate());
+        return !oldTaskRecord.status().equals(newTaskRecord.status())
+                || !oldTaskRecord.title().equals(newTaskRecord.title())
+                || !Objects.equals(oldTaskRecord.description(), newTaskRecord.description())
+                || !Objects.equals(oldTaskRecord.endDate(), newTaskRecord.endDate());
     }
 
     public Set<String> getTelegramIds() {
         Set<String> users = new HashSet<>();
         switch (type) {
             case CREATED -> {
-                users.addAll(newTask.telegramIds());
+                users.addAll(newTaskRecord.telegramIds());
             }
             case UPDATED -> {
-                users.addAll(oldTask.telegramIds());
-                users.addAll(newTask.telegramIds());
+                users.addAll(newTaskRecord.telegramIds());
+                users.addAll(newTaskRecord.telegramIds());
             }
             case DELETED -> {
-                users.addAll(oldTask.telegramIds());
+                users.addAll(newTaskRecord.telegramIds());
             }
         }
         return users;
