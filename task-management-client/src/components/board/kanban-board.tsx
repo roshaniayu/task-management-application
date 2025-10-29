@@ -118,6 +118,7 @@ export function KanbanBoard() {
         endDate: created.endDate ?? null,
         owner: created.owner,
         createdAt: created.createdAt,
+        assignees: created.assignees
       } as Task;
 
       setTasks((t) => [mapped, ...t]);

@@ -20,8 +20,8 @@ public class MessageListenerService {
 
     @JmsListener(destination = MQConfig.TASK_UPDATE_QUEUE)
     public void handleTaskUpdate(TaskMessage message) {
-
-        if (!message.hasImportantChanges()) {
+        // For updates, only send if there are important changes
+        if (message.type() == TaskMessage.MessageType.UPDATED && !message.hasImportantChanges()) {
             return;
         }
 

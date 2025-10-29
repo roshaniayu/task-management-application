@@ -98,6 +98,7 @@ Manado is a modern task management application that combines the visual efficien
 
 ### Backend
 - Java Spring Boot
+- Apache ActiveMQ
 - H2 Database
 - JWT Authentication
 - REST API

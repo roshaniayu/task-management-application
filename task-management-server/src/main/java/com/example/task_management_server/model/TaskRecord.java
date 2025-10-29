@@ -29,9 +29,7 @@ public record TaskRecord(
     }
 
     private static Set<String> getUsernames(Set<Account> assignees) {
-        Set<String> ids = new HashSet<>();
-        ids.addAll(assignees.stream().map(Account::getUsername).collect(Collectors.toSet()));
-        return ids;
+        return assignees.stream().map(Account::getUsername).collect(Collectors.toSet());
     }
 
     private static Set<String> getTelegramIds(Account owner, Set<Account> assignees) {

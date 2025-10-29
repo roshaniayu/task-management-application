@@ -50,7 +50,8 @@ public record TaskMessage(
         return !oldTaskRecord.status().equals(newTaskRecord.status())
                 || !oldTaskRecord.title().equals(newTaskRecord.title())
                 || !Objects.equals(oldTaskRecord.description(), newTaskRecord.description())
-                || !Objects.equals(oldTaskRecord.endDate(), newTaskRecord.endDate());
+                || !Objects.equals(oldTaskRecord.endDate(), newTaskRecord.endDate())
+                || !Objects.equals(oldTaskRecord.assignees(), newTaskRecord.assignees());
     }
 
     public Set<String> getTelegramIds() {
@@ -61,10 +62,10 @@ public record TaskMessage(
             }
             case UPDATED -> {
                 users.addAll(newTaskRecord.telegramIds());
-                users.addAll(newTaskRecord.telegramIds());
+                users.addAll(oldTaskRecord.telegramIds());
             }
             case DELETED -> {
-                users.addAll(newTaskRecord.telegramIds());
+                users.addAll(oldTaskRecord.telegramIds());
             }
         }
         return users;

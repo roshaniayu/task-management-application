@@ -75,7 +75,11 @@ public class TaskService {
                 .assignees(assignees)
                 .build();
 
-        return taskRepo.save(task);
+        Task savedTask = taskRepo.save(task);
+        TaskRecord savedTaskRecord = TaskRecord.build(savedTask);
+        messageService.sendTaskUpdate(null, savedTaskRecord, TaskMessage.MessageType.CREATED);
+
+        return savedTask;
     }
 
     public Optional<Task> updateTaskIfAllowed(
@@ -133,7 +137,6 @@ public class TaskService {
 
         Task savedTask = taskRepo.save(updated);
         TaskRecord savedTaskRecord = TaskRecord.build(savedTask);
-
         messageService.sendTaskUpdate(taskRecord, savedTaskRecord, TaskMessage.MessageType.UPDATED);
 
         return Optional.of(savedTask);
@@ -150,7 +153,10 @@ public class TaskService {
             return false;
         }
 
+        TaskRecord taskRecord = TaskRecord.build(task);
         taskRepo.delete(task);
+        messageService.sendTaskUpdate(taskRecord, null, TaskMessage.MessageType.DELETED);
+
         return true;
     }
 
