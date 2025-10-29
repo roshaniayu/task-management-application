@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { BoardColumn, BoardContainer, type Column } from "./board-column";
 import { type Task, TaskCard } from "./task-card";
-import { ShareButton } from "./share-button";
+import { TelegramButton } from "./telegram-button";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multiple-containers-keyboard-preset";
 import { getAuth } from "@/lib/auth";
@@ -391,7 +391,7 @@ export function KanbanBoard() {
                         <Plus className="mr-2" size={16} /> New Task
                       </Button>
                     ) : (
-                      <ShareButton />
+                      <TelegramButton />
                     )}
                   </div>
                   <BoardColumn

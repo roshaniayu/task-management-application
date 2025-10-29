@@ -8,7 +8,8 @@ import java.util.Set;
 @Entity
 @Table(name = "account", schema = "public")
 @Getter
-@Builder
+@Setter
+@Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
@@ -30,4 +31,6 @@ public class Account {
     @ManyToMany(mappedBy = "assignees")
     private Set<Task> assignedTasks;
 
+    @Column(nullable = true, length = 64)
+    private String telegramId;
 }

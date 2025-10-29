@@ -15,13 +15,15 @@ import java.util.Set;
 @Service
 public class ChatbotService {
 
-    private static final DateTimeFormatter DATE_FORMATTER
-            = DateTimeFormatter.ofPattern("MMM dd, yyyy")
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MMM dd, yyyy")
             .withZone(ZoneId.systemDefault());
+
     @Autowired
     private TaskService taskService;
+
     @Autowired
     private JwtService jwtService;
+
     @Autowired
     private TelegramService telegramService;
 
@@ -29,7 +31,7 @@ public class ChatbotService {
         return DATE_FORMATTER.format(instant);
     }
 
-    public String generateBoardSummary(String token) {
+    public String sendBoardSummary(String token) {
         String username = jwtService.validateToken(token.substring(7));
         Set<Task> tasks = taskService.getTasksByUser(username);
 
@@ -138,7 +140,8 @@ public class ChatbotService {
         int urgentCount = 0;
         for (Task task : tasks) {
             Set<Account> assignees = task.getAssignees();
-            if (!(assignees.stream().anyMatch(account -> account.getUsername().equals(username)) || task.getOwner().getUsername().equals(username))) {
+            if (!(assignees.stream().anyMatch(account -> account.getUsername().equals(username))
+                    || task.getOwner().getUsername().equals(username))) {
                 continue;
             }
 
@@ -152,7 +155,7 @@ public class ChatbotService {
                 urgentCount++;
                 summary.append("• ").append(task.getTitle())
                         .append(" (Due: ").append(formatDate(task.getEndDate())).append(")")
-                        .append(" - ").append(daysUntilDue == 0 ? "Due today!" : daysUntilDue + " days left")
+                        .append(" - ").append(daysUntilDue == 0 ? "Due today!" : daysUntilDue == 1 ? daysUntilDue + " day left" : daysUntilDue + " days left")
                         .append("\n");
             }
         }

@@ -55,6 +55,10 @@ Manado is a modern task management application that combines the visual efficien
 
 2. Install dependencies:
    ```bash
+   npm install
+   ```
+   or
+   ```bash
    yarn install
    ```
 

@@ -157,26 +157,30 @@ export type ChatbotResponse = {
   summary: string;
 };
 
-export async function getBoardSummary(): Promise<ChatbotResponse> {
+export async function sendBoardSummary(): Promise<ChatbotResponse> {
   const auth = getAuth();
   if (!auth.token) throw new Error("Not authenticated");
 
-  return request("/telegram/board-summary", {
+  return request("/telegram/summary", {
+    method: "POST",
     headers: {
       Authorization: `Bearer ${auth.token}`,
     },
   });
 }
 
-export async function registerTelegramChat(chatId: string): Promise<void> {
+export type TelegramKeyResponse = {
+  key: string;
+};
+
+export async function getTelegramKey(): Promise<TelegramKeyResponse> {
   const auth = getAuth();
   if (!auth.token) throw new Error("Not authenticated");
 
-  return request("/telegram/register", {
-    method: "POST",
+  return request("/telegram/key", {
+    method: "GET",
     headers: {
       Authorization: `Bearer ${auth.token}`,
     },
-    body: JSON.stringify({ chatId }),
   });
 }

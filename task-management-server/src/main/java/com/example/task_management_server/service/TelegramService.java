@@ -1,7 +1,10 @@
 package com.example.task_management_server.service;
 
+import com.example.task_management_server.model.Account;
+import com.example.task_management_server.repository.AccountRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -10,81 +13,97 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
+@SuppressWarnings("unchecked")
 public class TelegramService {
     private static final Logger logger = LoggerFactory.getLogger(TelegramService.class);
-
-    // In-memory storage for demo purposes. In production, this should be in a database
-    private final Map<String, String> userTelegramChats = new HashMap<>();
-
     private final RestTemplate restTemplate;
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private JwtService jwtService;
     private Long lastUpdateId = -1L;
 
     @Value("${telegram.bot.token}")
     private String botToken;
 
-    @Value("${telegram.bot.username}")
-    private String botUsername;
-
-    @Value("${telegram.webhook.url:http://127.0.0.1:4040}")
-    private String webhookUrl;
-
     public TelegramService() {
         this.restTemplate = new RestTemplate();
     }
 
-    // Run continuously with a 1-second delay between polls
     @Scheduled(fixedDelay = 1000)
-    @SuppressWarnings("unchecked")
     public void pollMessages() {
-        while (!Thread.currentThread().isInterrupted()) {
-            try {
-                // Build the getUpdates URL with offset and timeout for long polling
-                String url = String.format("https://api.telegram.org/bot%s/getUpdates", botToken);
+        try {
+            String url = String.format(
+                    "https://api.telegram.org/bot%s/getUpdates?offset=%d&timeout=60",
+                    botToken,
+                    lastUpdateId + 1);
 
-                // Add query parameters for long polling (30 seconds timeout)
-                url += String.format("?offset=%d&timeout=30", lastUpdateId + 1);
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            Boolean ok = (Boolean) response.get("ok");
+            List<Map<String, Object>> updates = (List<Map<String, Object>>) response.get("result");
 
-                // Make the request and get the response
-                Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-
-                if (response != null && response.get("ok") == Boolean.TRUE && response.get("result") != null) {
-                    List<Map<String, Object>> updates = (List<Map<String, Object>>) response.get("result");
-
-                    for (Map<String, Object> update : updates) {
-                        // Get the update ID
-                        Number updateId = (Number) update.get("update_id");
-                        if (updateId != null) {
-                            lastUpdateId = Math.max(lastUpdateId, updateId.longValue());
-                        }
-
-                        // Process message if present
-                        Map<String, Object> message = (Map<String, Object>) update.get("message");
-
-                        if (message != null) {
-                            Map<String, Object> chat = (Map<String, Object>) message.get("chat");
-                            String text = (String) message.get("text");
-                            String chatId = String.valueOf(chat.get("id"));
-
-                            if (chat != null && text != null) {
-                                // Handle commands
-                                if (text.startsWith("/start")) {
-                                    // Send welcome message with the chat ID
-                                    String welcomeMessage = String.format(
-                                            "🎉 Welcome to Manado Task Management Bot!\n\n"
-                                                    + "Your Chat ID is: %s\n\n"
-                                                    + "Copy this ID and paste it in the application to receive task updates.",
-                                            chatId);
-                                    sendMessage(chatId, welcomeMessage);
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                break;
+            if (response == null || !ok || updates == null) {
+                return;
             }
+
+            for (Map<String, Object> update : updates) {
+                Number updateId = (Number) update.get("update_id");
+                if (updateId != null) {
+                    lastUpdateId = Math.max(lastUpdateId, updateId.longValue());
+                }
+
+                Map<String, Object> message = (Map<String, Object>) update.get("message");
+                if (message == null) {
+                    continue;
+                }
+
+                Map<String, Object> chat = (Map<String, Object>) message.get("chat");
+                Number chatId = (Number) chat.get("id");
+                String text = (String) message.get("text");
+
+                if (chatId == null || text == null) {
+                    continue;
+                }
+
+                String chatIdStr = String.valueOf(chatId);
+
+                String[] parts = text.split("\\s+");
+                if (parts.length == 0) {
+                    continue;
+                }
+
+                String token = parts[parts.length - 1];
+                String username = jwtService.validateTelegramKey(token);
+                if (username == null) {
+                    continue;
+                }
+
+                Optional<Account> accountOpt = accountRepository.findById(username);
+                if (accountOpt.isEmpty()) {
+                    continue;
+                }
+
+                Account account = accountOpt
+                        .get()
+                        .toBuilder()
+                        .telegramId(chatIdStr)
+                        .build();
+                accountRepository.save(account);
+
+                String welcomeMsg = String.format("🎉 Welcome to Manado Task Management Bot!\n\n" +
+                        "Your account (<code>@%s</code>) has been successfully connected. " +
+                        "You'll now receive task updates here.", account.getUsername());
+
+                sendMessage(chatIdStr, welcomeMsg);
+            }
+
+        } catch (
+
+                Exception e) {
+            logger.error("Error polling Telegram messages: {}", e.getMessage(), e);
         }
     }
 
@@ -92,7 +111,7 @@ public class TelegramService {
         String url = String.format("https://api.telegram.org/bot%s/sendMessage", botToken);
 
         Map<String, String> body = new HashMap<>();
-        body.put("chat_id", chatId);
+        body.put("chat_id", String.valueOf(chatId));
         body.put("text", message);
         body.put("parse_mode", "HTML");
         body.put("disable_web_page_preview", "true");
@@ -104,12 +123,10 @@ public class TelegramService {
         }
     }
 
-    public void storeTelegramChat(String username, String chatId) {
-        userTelegramChats.put(username, chatId);
-    }
-
     public String getTelegramChat(String username) {
-        return userTelegramChats.get(username);
+        return accountRepository.findById(username)
+                .map(Account::getTelegramId)
+                .orElse(null);
     }
 
 }

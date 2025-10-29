@@ -1,16 +1,16 @@
 package com.example.task_management_server.service;
 
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.util.Date;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.util.Base64;
+import java.util.Date;
+import java.util.Map;
 
 @Service
 public class JwtService {
@@ -49,6 +49,34 @@ public class JwtService {
                     .getBody()
                     .get("username", String.class);
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String generateTelegramKey(String username) {
+        return Base64.getEncoder().encodeToString(
+                Jwts.builder()
+                        .setClaims(Map.of("telegram", username))
+                        .signWith(signingKey, SignatureAlgorithm.HS256)
+                        .compact().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public String validateTelegramKey(String encTelegramKey) {
+        try {
+            byte[] decodedBytes = Base64.getDecoder().decode(encTelegramKey);
+            String telegramKey = new String(decodedBytes, StandardCharsets.UTF_8);
+
+            return Jwts.parserBuilder()
+                    .setSigningKey(signingKey)
+                    .build()
+                    .parseClaimsJws(telegramKey)
+                    .getBody()
+                    .get("telegram", String.class);
+        } catch (IllegalArgumentException e) {
+            // Base64 decoding failed
+            return null;
+        } catch (Exception e) {
+            // JWT validation failed
             return null;
         }
     }
