@@ -34,4 +34,5 @@ public class MQConfig {
         converter.setTypeIdPropertyName("_type");
         return converter;
     }
+
 }
