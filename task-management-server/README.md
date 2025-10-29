@@ -34,25 +34,43 @@ src/main/java/com/example/task_management_server/
 ```
 
 ## Controller Details (APIs)
-- **LoginController**: Handles user registration and authentication
-  - POST `/auth/register` - User registration with validation
-  - POST `/auth/login` - User authentication with JWT
-  - Parameters validated with annotations (@Email, @Size, etc.)
 
-- **UserController**: Handles user listing
-  - GET `/usernames` - Get list of all usernames for task assignment
-  - Returns usernames of all registered users
+### LoginController
+- Handles user registration and authentication
+- POST `/auth/register` - User registration with validation
+  - Username (alphanumeric only)
+  - Email validation
+  - Password (min 8 chars)
+- POST `/auth/login` - User authentication with JWT
+  - Returns JWT token valid for 30 days
+  - Includes username in response
+
+### UserController
+- Handles user listing functionality
+- GET `/usernames` - Get list of all usernames
+  - Used for task assignment
+  - Returns all registered users
   - Requires valid JWT token
 
-- **TaskController**: Manages task operations
-  - GET `/tasks` - List tasks (owned and assigned)
-  - POST `/tasks` - Create task with assignees
-  - PUT `/tasks/{id}` - Update task (owner and assignees only)
-  - DELETE `/tasks/{id}` - Delete task (owner only)
-  - All endpoints require valid JWT token
+### TaskController
+- Manages task operations
+- GET `/tasks` - List tasks (owned and assigned)
+- POST `/tasks` - Create task with assignees
+- PUT `/tasks/{id}` - Update task (owner and assignees only)
+- DELETE `/tasks/{id}` - Delete task (owner only)
+- All endpoints require valid JWT token
 
-- **TelegramController**: Handles Telegram integration
-  - POST `/telegram/register` - Link Telegram chat with user account
-  - GET `/telegram/board-summary` - Get current board state summary
-  - Both endpoints require valid JWT token
-  - Manages Telegram notifications and updates
+### TelegramController
+- Handles Telegram bot integration
+- GET `/telegram/key` - Get connection token
+  - Returns unique token for Telegram bot connection
+  - Returns empty if already connected
+  - Requires valid JWT token
+- POST `/telegram/summary` - Send board summary
+  - Sends task summary to connected Telegram chat
+  - Returns summary text
+  - Requires valid JWT token
+- Auto-polling mechanism
+  - Monitors bot messages every 1 second
+  - Handles user connection requests
+  - Stores chat IDs in user accounts
