@@ -2,6 +2,7 @@ package com.example.task_management_server.service;
 
 import com.example.task_management_server.model.Account;
 import com.example.task_management_server.model.Task;
+import com.example.task_management_server.model.TaskMessage;
 import com.example.task_management_server.repository.AccountRepository;
 import com.example.task_management_server.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -19,10 +20,12 @@ public class TaskService {
 
     private final TaskRepository taskRepo;
     private final AccountRepository userRepo;
+    private final MessageService messageService;
 
-    public TaskService(TaskRepository taskRepo, AccountRepository userRepo) {
+    public TaskService(TaskRepository taskRepo, AccountRepository userRepo, MessageService messageService) {
         this.taskRepo = taskRepo;
         this.userRepo = userRepo;
+        this.messageService = messageService;
     }
 
     public Set<Task> getTasksByUser(String username) {
@@ -74,7 +77,7 @@ public class TaskService {
         return taskRepo.save(task);
     }
 
-    public Optional<Task> updateTaskIfOwner(
+    public Optional<Task> updateTaskIfAllowed(
             String username,
             Long id,
             String title,
@@ -89,10 +92,12 @@ public class TaskService {
         }
 
         Task task = taskOpt.get();
+
         Boolean isOwner = task.getOwner().getUsername().equals(username);
         Boolean isAssignee = task.getAssignees()
                 .stream()
                 .anyMatch(assignee -> assignee.getUsername().equals(username));
+
         if (!isOwner && !isAssignee) {
             return Optional.empty();
         }
@@ -124,8 +129,11 @@ public class TaskService {
                 .status(newStatus)
                 .assignees(assignees)
                 .build();
+        Task savedTask = taskRepo.save(updated);
 
-        return Optional.of(taskRepo.save(updated));
+        messageService.sendTaskUpdate(task, savedTask, TaskMessage.MessageType.UPDATED);
+
+        return Optional.of(savedTask);
     }
 
     public boolean deleteIfOwner(String username, Long id) {

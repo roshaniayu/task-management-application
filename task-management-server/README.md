@@ -9,28 +9,28 @@ This is the backend server for the Manado Task Management application. It provid
 src/main/java/com/example/task_management_server/
 ├── TaskManagementServerApplication.java   # Main application with @EnableScheduling
 ├── config/
-│   └── WebConfig.java                    # CORS and auth interceptor config
+│   └── WebConfig.java                     # CORS and auth interceptor config
 ├── controller/
-│   ├── LoginController.java             # Authentication endpoints (/auth/*)
-│   ├── UserController.java              # Get all accounts (/usernames/*)
-│   ├── TaskController.java              # Task CRUD operations (/tasks/*)
-│   └── TelegramController.java          # Telegram notifications (/telegram/*)
+│   ├── LoginController.java               # Authentication endpoints (/auth/*)
+│   ├── UserController.java                # Get all accounts (/usernames/*)
+│   ├── TaskController.java                # Task CRUD operations (/tasks/*)
+│   └── TelegramController.java            # Telegram notifications (/telegram/*)
 ├── model/
-│   ├── Account.java                    # User entity with tasks relationships
-│   └── Task.java                       # Task entity with status enum
+│   ├── Account.java                       # User entity with tasks relationships
+│   └── Task.java                          # Task entity with status enum
 ├── repository/
-│   ├── AccountRepository.java          # User data access (JPA)
-│   └── TaskRepository.java             # Task queries by owner/assignee
+│   ├── AccountRepository.java             # User data access (JPA)
+│   └── TaskRepository.java                # Task queries by owner/assignee
 ├── service/
-│   ├── AccountService.java            # User management logic
-│   ├── JwtService.java                # Token generation/validation
-│   ├── TaskService.java               # Task business logic
-│   ├── TelegramService.java           # Bot message handling
-│   └── ChatbotService.java            # Board summary formatting
+│   ├── AccountService.java                # User management logic
+│   ├── JwtService.java                    # Token generation/validation
+│   ├── TaskService.java                   # Task business logic
+│   ├── TelegramService.java               # Bot message handling
+│   └── ChatbotService.java                # Board summary formatting
 ├── interceptor/
-│   └── AuthInterceptor.java          # JWT validation interceptor
+│   └── AuthInterceptor.java               # JWT validation interceptor
 └── exception/
-    └── GlobalExceptionHandler.java    # Centralized error handling
+    └── GlobalExceptionHandler.java        # Centralized error handling
 ```
 
 ## Controller Details (APIs)
@@ -47,10 +47,10 @@ src/main/java/com/example/task_management_server/
 
 ### UserController
 - Handles user listing functionality
-- GET `/usernames` - Get list of all usernames
+- GET `/usernames` - Get a list of all usernames
   - Used for task assignment
   - Returns all registered users
-  - Requires valid JWT token
+  - Requires a valid JWT token
 
 ### TaskController
 - Manages task operations
@@ -58,7 +58,7 @@ src/main/java/com/example/task_management_server/
 - POST `/tasks` - Create task with assignees
 - PUT `/tasks/{id}` - Update task (owner and assignees only)
 - DELETE `/tasks/{id}` - Delete task (owner only)
-- All endpoints require valid JWT token
+- All endpoints require a valid JWT token
 
 ### TelegramController
 - Handles Telegram bot integration

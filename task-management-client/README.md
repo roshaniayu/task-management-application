@@ -2,6 +2,8 @@
 
 This is the frontend client for the Manado Task Management application. It provides a modern, responsive interface for task management with Kanban board visualization, built using React, TypeScript, and Tailwind CSS.
 
+Developed from a base project: https://github.com/Georgegriff/react-dnd-kit-tailwind-shadcn-ui/tree/main 
+
 ## Architecture Overview
 
 ### Project Structure
