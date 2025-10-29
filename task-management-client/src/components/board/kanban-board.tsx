@@ -118,6 +118,7 @@ export function KanbanBoard() {
         endDate: created.endDate ?? null,
         owner: created.owner,
         createdAt: created.createdAt,
+        assignees: created.assignees
       } as Task;
 
       setTasks((t) => [mapped, ...t]);
@@ -522,7 +523,8 @@ export function KanbanBoard() {
       title: activeTask.title,
       description: activeTask.description,
       endDate: activeTask.endDate,
-      status: newStatus as "TODO" | "IN_PROGRESS" | "DONE"
+      status: newStatus as "TODO" | "IN_PROGRESS" | "DONE",
+      assignees: activeTask.assignees
     }).catch((error: any) => {
       toast.error(`Error: ${error?.message || String(error)}. Please try again later.`);
     });

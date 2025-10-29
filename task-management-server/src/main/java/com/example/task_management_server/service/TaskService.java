@@ -2,6 +2,8 @@ package com.example.task_management_server.service;
 
 import com.example.task_management_server.model.Account;
 import com.example.task_management_server.model.Task;
+import com.example.task_management_server.model.TaskMessage;
+import com.example.task_management_server.model.TaskRecord;
 import com.example.task_management_server.repository.AccountRepository;
 import com.example.task_management_server.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -19,10 +21,12 @@ public class TaskService {
 
     private final TaskRepository taskRepo;
     private final AccountRepository userRepo;
+    private final MessageService messageService;
 
-    public TaskService(TaskRepository taskRepo, AccountRepository userRepo) {
+    public TaskService(TaskRepository taskRepo, AccountRepository userRepo, MessageService messageService) {
         this.taskRepo = taskRepo;
         this.userRepo = userRepo;
+        this.messageService = messageService;
     }
 
     public Set<Task> getTasksByUser(String username) {
@@ -71,10 +75,14 @@ public class TaskService {
                 .assignees(assignees)
                 .build();
 
-        return taskRepo.save(task);
+        Task savedTask = taskRepo.save(task);
+        TaskRecord savedTaskRecord = TaskRecord.build(savedTask);
+        messageService.sendTaskUpdate(null, savedTaskRecord, TaskMessage.MessageType.CREATED);
+
+        return savedTask;
     }
 
-    public Optional<Task> updateTaskIfOwner(
+    public Optional<Task> updateTaskIfAllowed(
             String username,
             Long id,
             String title,
@@ -89,6 +97,8 @@ public class TaskService {
         }
 
         Task task = taskOpt.get();
+        TaskRecord taskRecord = TaskRecord.build(task);
+
         Boolean isOwner = task.getOwner().getUsername().equals(username);
         Boolean isAssignee = task.getAssignees()
                 .stream()
@@ -125,7 +135,11 @@ public class TaskService {
                 .assignees(assignees)
                 .build();
 
-        return Optional.of(taskRepo.save(updated));
+        Task savedTask = taskRepo.save(updated);
+        TaskRecord savedTaskRecord = TaskRecord.build(savedTask);
+        messageService.sendTaskUpdate(taskRecord, savedTaskRecord, TaskMessage.MessageType.UPDATED);
+
+        return Optional.of(savedTask);
     }
 
     public boolean deleteIfOwner(String username, Long id) {
@@ -139,7 +153,10 @@ public class TaskService {
             return false;
         }
 
+        TaskRecord taskRecord = TaskRecord.build(task);
         taskRepo.delete(task);
+        messageService.sendTaskUpdate(taskRecord, null, TaskMessage.MessageType.DELETED);
+
         return true;
     }
 

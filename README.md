@@ -9,6 +9,7 @@ Manado is a modern task management application that combines the visual efficien
 ### Key Features
 - Interactive Kanban board with real-time updates
 - Multi-user task assignment and collaboration
+- Ownership-based permissions to update and delete a task
 - Telegram integration for task notifications and summaries
 - Dark/light theme support
 - Responsive design for all devices
@@ -97,6 +98,7 @@ Manado is a modern task management application that combines the visual efficien
 
 ### Backend
 - Java Spring Boot
+- Apache ActiveMQ
 - H2 Database
 - JWT Authentication
 - REST API

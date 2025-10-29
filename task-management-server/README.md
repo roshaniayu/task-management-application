@@ -1,39 +1,44 @@
 # Manado Task Management Server
 
-This is the backend server for the Manado Task Management application. It provides RESTful APIs for task management, user authentication, and Telegram integration.
+This is the backend server for the Manado Task Management application. It provides RESTful APIs for task management, user authentication, and real-time notifications through an event-driven architecture using ActiveMQ.
 
 ## Architecture Overview
 
 ### Project Structure
 ```
 src/main/java/com/example/task_management_server/
-├── TaskManagementServerApplication.java   # Main application with @EnableScheduling
+├── TaskManagementServerApplication.java   # Main application with @EnableJms
 ├── config/
-│   └── WebConfig.java                    # CORS and auth interceptor config
+│   ├── WebConfig.java                     # CORS and auth interceptor config
+│   └── MQConfig.java                      # ActiveMQ broker configuration
 ├── controller/
-│   ├── LoginController.java             # Authentication endpoints (/auth/*)
-│   ├── UserController.java              # Get all accounts (/usernames/*)
-│   ├── TaskController.java              # Task CRUD operations (/tasks/*)
-│   └── TelegramController.java          # Telegram notifications (/telegram/*)
+│   ├── LoginController.java               # Authentication endpoints (/auth/*)
+│   ├── UserController.java                # Get all accounts (/usernames/*)
+│   ├── TaskController.java                # Task CRUD operations (/tasks/*)
+│   └── TelegramController.java            # Telegram notifications (/telegram/*)
 ├── model/
-│   ├── Account.java                    # User entity with tasks relationships
-│   └── Task.java                       # Task entity with status enum
+│   ├── Account.java                       # User entity with tasks relationships
+│   ├── Task.java                          # Task entity with status enum
+│   ├── TaskRecord.java                    # Immutable task state for events
+│   └── TaskMessage.java                   # Event message structure
 ├── repository/
-│   ├── AccountRepository.java          # User data access (JPA)
-│   └── TaskRepository.java             # Task queries by owner/assignee
+│   ├── AccountRepository.java             # User data access (JPA)
+│   └── TaskRepository.java                # Task queries by owner/assignee
 ├── service/
-│   ├── AccountService.java            # User management logic
-│   ├── JwtService.java                # Token generation/validation
-│   ├── TaskService.java               # Task business logic
-│   ├── TelegramService.java           # Bot message handling
-│   └── ChatbotService.java            # Board summary formatting
+│   ├── AccountService.java                # User management logic
+│   ├── JwtService.java                    # Token generation/validation
+│   ├── TaskService.java                   # Task business logic + event publishing
+│   ├── MessageService.java                # Event publishing service
+│   ├── MessageListenerService.java        # Event handling and notification
+│   ├── TelegramService.java               # Telegram message delivery
+│   └── ChatbotService.java                # AI-powered task suggestions
 ├── interceptor/
-│   └── AuthInterceptor.java          # JWT validation interceptor
+│   └── AuthInterceptor.java               # JWT validation interceptor
 └── exception/
-    └── GlobalExceptionHandler.java    # Centralized error handling
+    └── GlobalExceptionHandler.java        # Centralized error handling
 ```
 
-## Controller Details (APIs)
+## Controller Details (API Endpoints)
 
 ### LoginController
 - Handles user registration and authentication
@@ -47,10 +52,10 @@ src/main/java/com/example/task_management_server/
 
 ### UserController
 - Handles user listing functionality
-- GET `/usernames` - Get list of all usernames
+- GET `/usernames` - Get a list of all usernames
   - Used for task assignment
   - Returns all registered users
-  - Requires valid JWT token
+  - Requires a valid JWT token
 
 ### TaskController
 - Manages task operations
@@ -58,7 +63,7 @@ src/main/java/com/example/task_management_server/
 - POST `/tasks` - Create task with assignees
 - PUT `/tasks/{id}` - Update task (owner and assignees only)
 - DELETE `/tasks/{id}` - Delete task (owner only)
-- All endpoints require valid JWT token
+- All endpoints require a valid JWT token
 
 ### TelegramController
 - Handles Telegram bot integration
@@ -74,3 +79,46 @@ src/main/java/com/example/task_management_server/
   - Monitors bot messages every 1 second
   - Handles user connection requests
   - Stores chat IDs in user accounts
+
+## Event-Driven Architecture
+
+The server implements an event-driven architecture using ActiveMQ for real-time notifications:
+
+### Message Flow
+1. **Event Publishing** (TaskService):
+   - Task Created: Notify owner and assignees
+   - Task Updated: Notify if important fields changed (status, title, description, deadline)
+   - Task Deleted: Notify all involved users
+
+2. **Message Structure** (TaskMessage):
+   - oldTaskRecord: Previous task state (null for creation)
+   - newTaskRecord: New task state (null for deletion)
+   - type: CREATED, UPDATED, or DELETED
+   - Change tracking for important fields
+
+3. **Event Processing** (MessageListenerService):
+   - Listens to task_updates queue
+   - Filters notifications based on change importance
+   - Delivers personalized notifications via Telegram
+
+### Event Types and Notifications
+
+#### Task Creation
+- Triggers CREATED event
+- Notifies new owner and assignees
+- Message: "📢 New task created: {title}"
+
+#### Task Updates
+- Triggers UPDATED event
+- Notifies when important fields change:
+  - Status changes
+  - Title changes
+  - Description changes
+  - Deadline changes
+  - Assignee changes
+- Message: "📝 Task '{title}' updated: {changes} changed"
+
+#### Task Deletion
+- Triggers DELETED event
+- Notifies owner and all assignees
+- Message: "🗑️ Task deleted: {title}"

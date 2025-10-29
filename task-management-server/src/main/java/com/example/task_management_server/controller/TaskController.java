@@ -108,7 +108,7 @@ public class TaskController {
             @PathVariable("id") Long id,
             @RequestBody UpdateTaskRequest req) {
 
-        Optional<Task> savedOpt = taskService.updateTaskIfOwner(
+        Optional<Task> savedOpt = taskService.updateTaskIfAllowed(
                 username,
                 id,
                 req.title(),
