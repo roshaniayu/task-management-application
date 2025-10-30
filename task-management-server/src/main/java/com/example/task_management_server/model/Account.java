@@ -1,9 +1,10 @@
 package com.example.task_management_server.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.*;
-
-import java.util.Set;
 
 @Entity
 @Table(name = "account", schema = "public")
@@ -25,12 +26,7 @@ public class Account {
     @Column(nullable = false, length = 128)
     private String password;
 
-    @OneToMany(mappedBy = "owner", orphanRemoval = true)
-    private Set<Task> ownedTasks;
-
-    @ManyToMany(mappedBy = "assignees")
-    private Set<Task> assignedTasks;
-
     @Column(nullable = true, length = 64)
     private String telegramId;
+
 }
