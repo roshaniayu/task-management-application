@@ -1,4 +1,7 @@
-package com.example.task_management_server.model;
+package com.example.task_management_server.dto;
+
+import com.example.task_management_server.model.Account;
+import com.example.task_management_server.model.Task;
 
 import java.io.Serializable;
 import java.util.HashSet;

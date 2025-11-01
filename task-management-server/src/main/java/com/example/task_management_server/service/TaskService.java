@@ -1,9 +1,9 @@
 package com.example.task_management_server.service;
 
+import com.example.task_management_server.dto.TaskMessage;
+import com.example.task_management_server.dto.TaskRecord;
 import com.example.task_management_server.model.Account;
 import com.example.task_management_server.model.Task;
-import com.example.task_management_server.model.TaskMessage;
-import com.example.task_management_server.model.TaskRecord;
 import com.example.task_management_server.repository.AccountRepository;
 import com.example.task_management_server.repository.TaskRepository;
 import org.springframework.stereotype.Service;

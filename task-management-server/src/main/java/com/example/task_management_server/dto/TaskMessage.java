@@ -1,4 +1,4 @@
-package com.example.task_management_server.model;
+package com.example.task_management_server.dto;
 
 import java.io.Serializable;
 import java.util.*;

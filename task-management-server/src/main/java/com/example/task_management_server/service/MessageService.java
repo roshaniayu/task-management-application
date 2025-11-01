@@ -1,8 +1,8 @@
 package com.example.task_management_server.service;
 
 import com.example.task_management_server.config.MQConfig;
-import com.example.task_management_server.model.TaskMessage;
-import com.example.task_management_server.model.TaskRecord;
+import com.example.task_management_server.dto.TaskMessage;
+import com.example.task_management_server.dto.TaskRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
