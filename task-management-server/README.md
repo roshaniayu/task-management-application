@@ -7,35 +7,43 @@ This is the backend server for the Manado Task Management application. It provid
 ### Project Structure
 ```
 src/main/java/com/example/task_management_server/
-├── TaskManagementServerApplication.java   # Main application with @EnableJms
+├── TaskManagementServerApplication.java    # Main application with @EnableJms
 ├── config/
-│   ├── WebConfig.java                     # CORS and auth interceptor config
-│   └── MQConfig.java                      # ActiveMQ broker configuration
+│   ├── WebConfig.java                      # CORS and auth interceptor config
+│   └── MQConfig.java                       # ActiveMQ broker configuration
 ├── controller/
-│   ├── LoginController.java               # Authentication endpoints (/auth/*)
-│   ├── UserController.java                # Get all accounts (/usernames/*)
-│   ├── TaskController.java                # Task CRUD operations (/tasks/*)
-│   └── TelegramController.java            # Telegram notifications (/telegram/*)
+│   ├── LoginController.java                # Authentication endpoints (/auth/*)
+│   ├── UserController.java                 # Get all accounts (/usernames/*)
+│   ├── TaskController.java                 # Task CRUD operations (/tasks/*)
+│   └── TelegramController.java             # Telegram notifications (/telegram/*)
 ├── model/
-│   ├── Account.java                       # User entity with tasks relationships
-│   ├── Task.java                          # Task entity with status enum
-│   ├── TaskRecord.java                    # Immutable task state for events
-│   └── TaskMessage.java                   # Event message structure
+│   ├── Account.java                        # User entity with tasks relationships
+│   ├── Task.java                           # Task entity with status enum
+│   ├── TaskRecord.java                     # Immutable task state for events
+│   └── TaskMessage.java                    # Event message structure
 ├── repository/
-│   ├── AccountRepository.java             # User data access (JPA)
-│   └── TaskRepository.java                # Task queries by owner/assignee
+│   ├── AccountRepository.java              # User data access (JPA)
+│   └── TaskRepository.java                 # Task queries by owner/assignee
 ├── service/
-│   ├── AccountService.java                # User management logic
-│   ├── JwtService.java                    # Token generation/validation
-│   ├── TaskService.java                   # Task business logic + event publishing
-│   ├── MessageService.java                # Event publishing service
-│   ├── MessageListenerService.java        # Event handling and notification
-│   ├── TelegramService.java               # Telegram message delivery
-│   └── ChatbotService.java                # AI-powered task suggestions
+│   ├── AccountService.java                 # User management contract
+│   ├── JwtService.java                     # Token operations contract
+│   ├── TaskService.java                    # Task workflow contract
+│   ├── MessageService.java                 # Event publishing contract
+│   ├── MessageListenerService.java         # Event listener contract
+│   ├── TelegramService.java                # Telegram integration contract
+│   ├── ChatbotService.java                 # Board summary contract
+│   └── impl/
+│       ├── AccountServiceImpl.java         # User management logic
+│       ├── JwtServiceImpl.java             # JWT generate/validate logic
+│       ├── TaskServiceImpl.java            # Task workflows + event publishing
+│       ├── MessageServiceImpl.java         # ActiveMQ publish implementation
+│       ├── MessageListenerServiceImpl.java # Task event listener implementation
+│       ├── TelegramServiceImpl.java        # Telegram bot integration logic
+│       └── ChatbotServiceImpl.java         # Telegram-ready board summaries
 ├── interceptor/
-│   └── AuthInterceptor.java               # JWT validation interceptor
+│   └── AuthInterceptor.java                # JWT validation interceptor
 └── exception/
-    └── GlobalExceptionHandler.java        # Centralized error handling
+    └── GlobalExceptionHandler.java         # Centralized error handling
 ```
 
 ## Controller Details (API Endpoints)
